@@ -1,0 +1,21 @@
+{
+  "name": "motel-management-system",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Motel Management System - Full Stack Application",
+  "scripts": {
+    "setup": "npm install && npm --prefix server install && npm --prefix client install",
+    "start": "concurrently \"npm --prefix server run dev\" \"npm --prefix client run dev\"",
+    "start:server": "npm --prefix server run dev",
+    "start:client": "npm --prefix client run dev",
+    "prod:server": "npm --prefix server start",
+    "prod:client": "npm --prefix client build",
+    "test": "echo \"No tests configured yet\""
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
