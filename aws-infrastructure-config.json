@@ -1,0 +1,254 @@
+{
+  "infrastructure": {
+    "region": "ap-south-1",
+    "profile": "motel-deploy",
+    "createdDate": "2026-03-31T18:19:00Z",
+    "environment": "production"
+  },
+  "ec2": {
+    "instance": {
+      "id": "i-0e0744e92414e9249",
+      "name": "motel-management-ec2",
+      "type": "t3.micro",
+      "state": "running",
+      "amiId": "ami-095cc90aa5ddff518",
+      "amiName": "ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-20260320",
+      "arch": "x86_64"
+    },
+    "network": {
+      "vpcId": "vpc-04643c96fb3b5b092",
+      "subnetId": "subnet-068afd633af033498",
+      "privateIp": "172.31.42.6",
+      "publicIp": "3.109.181.188",
+      "elasticIp": {
+        "address": "3.110.24.107",
+        "allocationId": "eipalloc-0d46f4c0f37517ed3",
+        "associationId": "eipassoc-0eb94c73b524971ec"
+      }
+    },
+    "security": {
+      "keyName": "motel-management-key",
+      "keyFile": "motel-management-key.pem",
+      "securityGroupId": "sg-02b0e2b042dfd5c88",
+      "securityGroupName": "motel-management-ec2-sg",
+      "inboundRules": [
+        {
+          "protocol": "tcp",
+          "port": 22,
+          "cidr": "0.0.0.0/0",
+          "description": "SSH"
+        },
+        {
+          "protocol": "tcp",
+          "port": 80,
+          "cidr": "0.0.0.0/0",
+          "description": "HTTP"
+        },
+        {
+          "protocol": "tcp",
+          "port": 443,
+          "cidr": "0.0.0.0/0",
+          "description": "HTTPS"
+        },
+        {
+          "protocol": "tcp",
+          "port": 5000,
+          "cidr": "0.0.0.0/0",
+          "description": "Node.js Backend"
+        }
+      ]
+    },
+    "connection": {
+      "sshCommand": "ssh -i motel-management-key.pem ubuntu@3.110.24.107",
+      "elasticIpCommand": "ssh -i motel-management-key.pem ubuntu@3.110.24.107",
+      "dnsCommand": "ssh -i motel-management-key.pem ubuntu@ec2-3-110-24-107.ap-south-1.compute.amazonaws.com"
+    }
+  },
+  "rds": {
+    "instance": {
+      "id": "motel-management-db",
+      "class": "db.t3.micro",
+      "engine": "postgres",
+      "engineVersion": "14.15",
+      "status": "creating",
+      "statusNote": "Database is initializing. May take 5-15 minutes. Endpoint will be available soon.",
+      "allocatedStorage": 20,
+      "storageType": "gp2"
+    },
+    "database": {
+      "name": "motel_db",
+      "port": 5432,
+      "username": "motel_admin",
+      "password": "MotelApp2026!Secure",
+      "backupRetention": 1
+    },
+    "network": {
+      "vpcId": "vpc-04643c96fb3b5b092",
+      "securityGroupId": "sg-0c4390bd9961af658",
+      "securityGroupName": "motel-management-rds-sg",
+      "publiclyAccessible": false,
+      "multiAz": false
+    },
+    "endpoint": {
+      "address": null,
+      "port": null,
+      "status": "pending"
+    },
+    "connectionStringTemplate": "postgresql://motel_admin:MotelApp2026!Secure@{ENDPOINT}:5432/motel_db",
+    "note": "PENDING - RDS database is still being created. Check back in 5-15 minutes for endpoint."
+  },
+  "environments": {
+    "development": {
+      "nodeEnv": "development",
+      "port": "5000",
+      "dbHost": "localhost",
+      "dbPort": "5432",
+      "dbName": "motel_db",
+      "dbUser": "motel_admin",
+      "dbPassword": "MotelApp2026!Secure"
+    },
+    "production": {
+      "nodeEnv": "production",
+      "port": "5000",
+      "dbHost": "PENDING_RDS_ENDPOINT",
+      "dbPort": "5432",
+      "dbName": "motel_db",
+      "dbUser": "motel_admin",
+      "dbPassword": "MotelApp2026!Secure"
+    }
+  },
+  "deployment": {
+    "steps": [
+      {
+        "id": 1,
+        "title": "Wait for RDS Database",
+        "description": "RDS database is initializing. Check status in AWS console.",
+        "command": "aws rds describe-db-instances --db-instance-identifier motel-management-db --region ap-south-1 --profile motel-deploy",
+        "status": "in_progress",
+        "timeToComplete": "5-15 minutes"
+      },
+      {
+        "id": 2,
+        "title": "SSH into EC2 Instance",
+        "description": "Connect to the EC2 instance using SSH",
+        "command": "ssh -i motel-management-key.pem ubuntu@3.110.24.107",
+        "status": "ready",
+        "timeToComplete": "1 minute"
+      },
+      {
+        "id": 3,
+        "title": "Update System",
+        "description": "Update Ubuntu packages",
+        "command": "sudo apt update && sudo apt upgrade -y",
+        "status": "ready",
+        "timeToComplete": "5 minutes"
+      },
+      {
+        "id": 4,
+        "title": "Install Dependencies",
+        "description": "Install Node.js, npm, and other tools",
+        "command": "curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && sudo apt install -y nodejs npm git pm2",
+        "status": "ready",
+        "timeToComplete": "10 minutes"
+      },
+      {
+        "id": 5,
+        "title": "Clone Application",
+        "description": "Clone the motel management application",
+        "command": "cd /home/ubuntu && git clone https://github.com/sidharthsv18/motel-management-system.git && cd motel-management-system",
+        "status": "ready",
+        "timeToComplete": "2 minutes"
+      },
+      {
+        "id": 6,
+        "title": "Install Node Dependencies",
+        "description": "Install npm packages for server and client",
+        "command": "npm run setup",
+        "status": "ready",
+        "timeToComplete": "10 minutes"
+      },
+      {
+        "id": 7,
+        "title": "Configure RDS Endpoint",
+        "description": "Update .env file with RDS endpoint (once available)",
+        "command": "echo 'DB_HOST={RDS_ENDPOINT}' > .env",
+        "status": "blocked",
+        "blockedBy": "RDS initialization"
+      },
+      {
+        "id": 8,
+        "title": "Initialize Database",
+        "description": "Run database initialization script",
+        "command": "psql -h {RDS_ENDPOINT} -U motel_admin -d motel_db -f database/init.sql",
+        "status": "blocked",
+        "blockedBy": "RDS initialization"
+      },
+      {
+        "id": 9,
+        "title": "Start Application (PM2)",
+        "description": "Start Node.js backend and React frontend with PM2",
+        "command": "pm2 start npm --name 'motel-backend' -- start",
+        "status": "ready",
+        "timeToComplete": "2 minutes"
+      },
+      {
+        "id": 10,
+        "title": "Configure Domain (Optional)",
+        "description": "Point domain to Elastic IP",
+        "command": "Update DNS A record to 3.110.24.107",
+        "status": "ready",
+        "timeToComplete": "varies"
+      }
+    ]
+  },
+  "billing": {
+    "freeTier": {
+      "ec2": {
+        "hours": 750,
+        "unit": "hours/month",
+        "cost": "$0"
+      },
+      "rds": {
+        "hours": 750,
+        "storage": "20 GB",
+        "unit": "hours/month + GB/month",
+        "cost": "$0"
+      },
+      "elasticIp": {
+        "active": 1,
+        "unit": "per instance (when associated)",
+        "cost": "$0"
+      },
+      "dataTransfer": {
+        "inbound": "unlimited",
+        "outbound": "100 GB/month",
+        "cost": "$0"
+      }
+    },
+    "estimatedMonthlyCost": "$0",
+    "freeTierDuration": "12 months from account creation",
+    "estimatedAnnualCost": "$0"
+  },
+  "commands": {
+    "ec2": {
+      "describeInstances": "aws ec2 describe-instances --instance-ids i-0e0744e92414e9249 --region ap-south-1 --profile motel-deploy",
+      "stopInstance": "aws ec2 stop-instances --instance-ids i-0e0744e92414e9249 --region ap-south-1 --profile motel-deploy",
+      "startInstance": "aws ec2 start-instances --instance-ids i-0e0744e92414e9249 --region ap-south-1 --profile motel-deploy",
+      "terminateInstance": "aws ec2 terminate-instances --instance-ids i-0e0744e92414e9249 --region ap-south-1 --profile motel-deploy"
+    },
+    "rds": {
+      "describeDatabase": "aws rds describe-db-instances --db-instance-identifier motel-management-db --region ap-south-1 --profile motel-deploy",
+      "getEndpoint": "aws rds describe-db-instances --db-instance-identifier motel-management-db --region ap-south-1 --profile motel-deploy --query 'DBInstances[0].Endpoint'",
+      "deleteDatabase": "aws rds delete-db-instance --db-instance-identifier motel-management-db --skip-final-snapshot --region ap-south-1 --profile motel-deploy"
+    },
+    "elasticIp": {
+      "describeAddress": "aws ec2 describe-addresses --allocation-ids eipalloc-0d46f4c0f37517ed3 --region ap-south-1 --profile motel-deploy"
+    }
+  },
+  "status": {
+    "ec2": "running ✓",
+    "elasticIp": "associated ✓",
+    "rds": "creating (5-15 min)",
+    "overall": "AWS infrastructure 95% complete - waiting for RDS initialization"
+  }
+}

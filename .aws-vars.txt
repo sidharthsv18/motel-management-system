@@ -1,0 +1,2 @@
+SG_EC2=sg-02b0e2b042dfd5c88
+VPC_ID=vpc-04643c96fb3b5b092

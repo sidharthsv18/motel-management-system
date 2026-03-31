@@ -1,0 +1,3 @@
+$SG_EC2='sg-02b0e2b042dfd5c88'
+$SG_RDS='sg-0c4390bd9961af658'
+$VPC_ID='vpc-04643c96fb3b5b092'

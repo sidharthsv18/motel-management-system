@@ -1,0 +1,239 @@
+================================================================================
+  MOTEL MANAGEMENT SYSTEM - AWS INFRASTRUCTURE SETUP COMPLETE
+================================================================================
+Created: March 31, 2026
+Region: ap-south-1 (Mumbai, India)
+Profile: motel-deploy
+
+================================================================================
+1. EC2 INSTANCE DETAILS
+================================================================================
+
+Instance ID:              i-0e0744e92414e9249
+Instance Name:            motel-management-ec2
+Instance Type:            t3.micro (free tier eligible)
+Instance Status:          running ✓
+
+Network Configuration:
+  - VPC ID:              vpc-04643c96fb3b5b092
+  - Subnet ID:           subnet-068afd633af033498
+  - Private IP Address:  172.31.42.6
+  - Elastic IP Address:  3.110.24.107 ✓
+  - EIP Allocation ID:   eipalloc-0d46f4c0f37517ed3
+  - EIP Association ID:  eipassoc-0eb94c73b524971ec
+  - Security Group:      motel-management-ec2-sg (sg-02b0e2b042dfd5c88)
+
+Key Pair:
+  - Key Name:            motel-management-key
+  - Key File:            motel-management-key.pem
+  - Location:            ./motel-management-key.pem
+  
+Security Group Rules (EC2):
+  - SSH (22):            Allow from anywhere (0.0.0.0/0)
+  - HTTP (80):           Allow from anywhere (0.0.0.0/0)
+  - HTTPS (443):         Allow from anywhere (0.0.0.0/0)
+  - Port 5000:           Allow from anywhere (0.0.0.0/0) [Node.js backend]
+
+================================================================================
+2. RDS POSTGRESQL DATABASE DETAILS
+================================================================================
+
+Database Instance ID:     motel-management-db
+Database Engine:          PostgreSQL 14.15
+Instance Class:           db.t3.micro (free tier eligible)
+Allocated Storage:        20 GB (gp2)
+Database Name:            motel_db
+Port:                     5432
+Status:                   creating (may take 5-15 minutes)
+
+Database Credentials:
+  - Master Username:      motel_admin
+  - Master Password:      MotelApp2026!Secure
+  - Database Name:        motel_db
+  
+Network Configuration:
+  - VPC ID:              vpc-04643c96fb3b5b092
+  - Security Group:      motel-management-rds-sg (sg-0c4390bd9961af658)
+  - Publicly Accessible: No
+  - Multi-AZ:            No
+  - Backup Retention:    1 day (free tier limit)
+
+Security Group Rules (RDS):
+  - PostgreSQL (5432):   Allow from EC2 SG (sg-02b0e2b042dfd5c88)
+
+⚠️  RDS ENDPOINT: PENDING - Database is still being created
+    Check status with: aws rds describe-db-instances --db-instance-identifier motel-management-db --region ap-south-1 --profile motel-deploy
+    Once available, the endpoint will follow format: motel-management-db.xxxxx.ap-south-1.rds.amazonaws.com
+
+================================================================================
+3. SSH CONNECTION TO EC2 INSTANCE
+================================================================================
+
+SSH Command:
+  ssh -i motel-management-key.pem ubuntu@3.110.24.107
+
+Or using the DNS (if attached):
+  ssh -i motel-management-key.pem ubuntu@ec2-3-110-24-107.ap-south-1.compute.amazonaws.com
+
+Key Permissions:
+  chmod 600 motel-management-key.pem  (if needed on Linux/Mac)
+
+First Connection Steps:
+  1. ssh -i motel-management-key.pem ubuntu@3.110.24.107
+  2. sudo apt update
+  3. sudo apt upgrade -y
+  4. Install Node.js, npm, and other dependencies (see deployment guide)
+
+================================================================================
+4. DATABASE CONNECTION STRING
+================================================================================
+
+⚠️  PENDING - RDS is still initializing. Check status in AWS Console.
+
+Once RDS endpoint is ready, use this connection string:
+  
+  PostgreSQL URI:
+  postgresql://motel_admin:MotelApp2026!Secure@<RDS-ENDPOINT>:5432/motel_db
+
+  Example (once ready):
+  postgresql://motel_admin:MotelApp2026!Secure@motel-management-db.xxxxx.ap-south-1.rds.amazonaws.com:5432/motel_db
+
+Environment Variables to set on EC2:
+  export DB_HOST=<RDS-ENDPOINT>
+  export DB_PORT=5432
+  export DB_NAME=motel_db
+  export DB_USER=motel_admin
+  export DB_PASSWORD=MotelApp2026!Secure
+
+================================================================================
+5. COST SUMMARY
+================================================================================
+
+Free Tier Eligibility:
+  ✓ EC2 t3.micro:      FREE (750 hours/month)
+  ✓ RDS db.t3.micro:   FREE (750 hours/month, 20GB storage)
+  ✓ Elastic IP:        FREE (1 per instance, when associated)
+  ✓ Data Transfer:     FREE (in: unlimited, out: 100GB/month)
+
+Total Monthly Cost:     $0 (within free tier limits) 🎉
+
+Note: Free tier benefits are available for 12 months from AWS account creation.
+After 12 months or exceeding free tier limits, charges apply.
+
+================================================================================
+6. DEPLOYMENT CHECKLIST
+================================================================================
+
+AWS Infrastructure:
+  ✓ Security Groups created
+  ✓ Key Pair created
+  ✓ VPC/Subnet verified
+  ✓ EC2 instance launched (t3.micro)
+  ✓ Elastic IP allocated and associated (3.110.24.107)
+  ✓ RDS database created (PostgreSQL 14.15) - Status: initializing
+
+Next Steps:
+  [ ] Wait for RDS database to finish initialization (5-15 min)
+  [ ] Record RDS endpoint when available
+  [ ] SSH into EC2 instance: ssh -i motel-management-key.pem ubuntu@3.110.24.107
+  [ ] Install dependencies (Node.js, npm, pm2, etc.)
+  [ ] Clone/upload application code
+  [ ] Configure environment variables with RDS endpoint
+  [ ] Initialize database schema
+  [ ] Start Node.js backend on port 5000
+  [ ] Deploy React frontend
+  [ ] Test application
+
+Monitoring:
+  - View RDS Status: https://console.aws.amazon.com/rds/
+  - View EC2 Status: https://console.aws.amazon.com/ec2/
+  - View Security Groups: https://console.aws.amazon.com/ec2/v2/home?region=ap-south-1#SecurityGroups
+
+================================================================================
+7. QUICK REFERENCE - AWS CLI COMMANDS
+================================================================================
+
+Check EC2 Status:
+  aws ec2 describe-instances --instance-ids i-0e0744e92414e9249 --region ap-south-1 --profile motel-deploy
+
+Check RDS Status:
+  aws rds describe-db-instances --db-instance-identifier motel-management-db --region ap-south-1 --profile motel-deploy
+
+Get RDS Endpoint:
+  aws rds describe-db-instances --db-instance-identifier motel-management-db --region ap-south-1 --profile motel-deploy --query 'DBInstances[0].Endpoint'
+
+Stop EC2 (when not in use):
+  aws ec2 stop-instances --instance-ids i-0e0744e92414e9249 --region ap-south-1 --profile motel-deploy
+
+Terminate EC2 (when done - be careful!):
+  aws ec2 terminate-instances --instance-ids i-0e0744e92414e9249 --region ap-south-1 --profile motel-deploy
+
+Delete RDS Database (when done - be careful!):
+  aws rds delete-db-instance --db-instance-identifier motel-management-db --skip-final-snapshot --region ap-south-1 --profile motel-deploy
+
+================================================================================
+8. SECURITY NOTES
+================================================================================
+
+⚠️  IMPORTANT: Keep these credentials secure!
+  - Store motel-management-key.pem safely (don't commit to Git)
+  - Don't share RDS password
+  - Use .env files with proper .gitignore
+
+Password Security:
+  - RDS Master Password: MotelApp2026!Secure
+  - Consider changing after initial setup
+  - Use AWS Secrets Manager for production
+
+Network Security:
+  - EC2 has public access on ports 22, 80, 443, 5000
+  - RDS only accessible from EC2 SG
+  - Consider restricting SSH to specific IPs in production
+
+================================================================================
+9. RESOURCE SUMMARY
+================================================================================
+
+All resources have been tagged with:
+  - Name: [resource-name]
+  - Environment: production
+  - CreatedDate: 2026-03-31
+
+Resources Created:
+  [✓] VPC:                  vpc-04643c96fb3b5b092
+  [✓] Subnet:              subnet-068afd633af033498
+  [✓] EC2 Security Group:   sg-02b0e2b042dfd5c88
+  [✓] RDS Security Group:   sg-0c4390bd9961af658
+  [✓] EC2 Instance:        i-0e0744e92414e9249
+  [✓] Elastic IP:          3.110.24.107
+  [✓] Key Pair:            motel-management-key
+  [⏳] RDS Database:        motel-management-db (status: creating)
+
+================================================================================
+10. TROUBLESHOOTING
+================================================================================
+
+RDS Taking Too Long?
+  - Expected: 5-15 minutes to fully initialize
+  - Check status: aws rds describe-db-instances --db-instance-identifier motel-management-db --region ap-south-1 --profile motel-deploy
+
+Can't SSH to EC2?
+  - Check Elastic IP: 3.110.24.107
+  - Verify key permissions: chmod 600 motel-management-key.pem
+  - Check Security Group allows port 22 (SSH)
+  - Instance might still be initializing (wait 1-2 minutes)
+
+RDS Connection Failed?
+  - Ensure database is in "available" status
+  - Verify application security group is in RDS SG rules
+  - Check database credentials
+  - Verify EC2 instance has network access
+
+================================================================================
+
+Generated: 2026-03-31 18:19 UTC
+Next Update: After RDS database reaches "available" status
+
+For detailed logs, see: aws-launch-output.json
+
+================================================================================
