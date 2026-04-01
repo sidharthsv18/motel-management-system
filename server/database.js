@@ -1,140 +1,142 @@
-const { Pool } = require('pg');
-require('dotenv').config();
+const Database = require('better-sqlite3');
+const path = require('path');
 
-// Try to connect to RDS, fall back to local if needed
-let pool;
+// Use SQLite for simplicity - no complex setup needed
+const dbPath = path.join(__dirname, '..', 'motel.db');
+let db;
 let isConnected = false;
 
 try {
-  pool = new Pool({
-    host: process.env.DB_HOST || 'localhost',
-    port: process.env.DB_PORT || 5432,
-    database: process.env.DB_NAME || 'motel_db',
-    user: process.env.DB_USER || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    connectionTimeoutMillis: 5000
-  });
-
-  // Test connection
-  pool.on('error', (err) => {
-    console.error('⚠️  Database pool error:', err.message);
-    isConnected = false;
-  });
+  db = new Database(dbPath);
+  db.pragma('journal_mode = WAL');
+  isConnected = true;
+  console.log('✅ SQLite Database Connected:', dbPath);
 } catch (err) {
-  console.error('⚠️  Failed to create pool:', err.message);
-  pool = null;
+  console.error('⚠️  Failed to initialize SQLite:', err.message);
+  db = null;
+  isConnected = false;
+}
+
+// Helper to execute queries
+function query(sql, params = []) {
+  if (!db) throw new Error('Database not connected');
+  const stmt = db.prepare(sql);
+  return params.length > 0 ? stmt.all(...params) : stmt.all();
+}
+
+function queryOne(sql, params = []) {
+  if (!db) throw new Error('Database not connected');
+  const stmt = db.prepare(sql);
+  return params.length > 0 ? stmt.get(...params) : stmt.get();
+}
+
+function execute(sql, params = []) {
+  if (!db) throw new Error('Database not connected');
+  const stmt = db.prepare(sql);
+  return params.length > 0 ? stmt.run(...params) : stmt.run();
 }
 
 // Initialize all tables
-async function initializeDatabase() {
-  if (!pool) {
-    console.log('⚠️  Database not available - using in-memory storage');
+function initializeDatabase() {
+  if (!db) {
+    console.log('⚠️  Database not available');
     return;
   }
 
   try {
-    console.log('🔄 Initializing database...');
+    console.log('🔄 Initializing SQLite database...');
 
     // Rooms table
-    await pool.query(`
+    db.exec(`
       CREATE TABLE IF NOT EXISTS rooms (
-        id SERIAL PRIMARY KEY,
-        room_number VARCHAR(10) UNIQUE NOT NULL,
-        status VARCHAR(20) DEFAULT 'available',
-        price_per_night DECIMAL(10, 2) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        room_number TEXT UNIQUE NOT NULL,
+        status TEXT DEFAULT 'available',
+        price_per_night REAL NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
     // Bookings table
-    await pool.query(`
+    db.exec(`
       CREATE TABLE IF NOT EXISTS bookings (
-        id SERIAL PRIMARY KEY,
-        customer_name VARCHAR(100) NOT NULL,
-        phone VARCHAR(20) NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        customer_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
         check_in DATE NOT NULL,
         check_out DATE NOT NULL,
-        room_id INTEGER REFERENCES rooms(id),
+        room_id INTEGER,
         guests INTEGER NOT NULL,
-        price DECIMAL(10, 2) NOT NULL,
-        status VARCHAR(20) DEFAULT 'pending',
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        price REAL NOT NULL,
+        status TEXT DEFAULT 'pending',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(room_id) REFERENCES rooms(id)
       )
     `);
 
     // Payments table
-    await pool.query(`
+    db.exec(`
       CREATE TABLE IF NOT EXISTS payments (
-        id SERIAL PRIMARY KEY,
-        booking_id INTEGER REFERENCES bookings(id),
-        amount DECIMAL(10, 2) NOT NULL,
-        payment_method VARCHAR(50),
-        status VARCHAR(20) DEFAULT 'pending',
-        payment_date TIMESTAMP,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        booking_id INTEGER,
+        amount REAL NOT NULL,
+        payment_method TEXT,
+        status TEXT DEFAULT 'pending',
+        payment_date DATETIME,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(booking_id) REFERENCES bookings(id)
       )
     `);
 
     // Expenses table
-    await pool.query(`
+    db.exec(`
       CREATE TABLE IF NOT EXISTS expenses (
-        id SERIAL PRIMARY KEY,
-        category VARCHAR(50) NOT NULL,
-        description VARCHAR(255),
-        amount DECIMAL(10, 2) NOT NULL,
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL,
+        description TEXT,
+        amount REAL NOT NULL,
         expense_date DATE NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
     // Audit logs table
-    await pool.query(`
+    db.exec(`
       CREATE TABLE IF NOT EXISTS audit_logs (
-        id SERIAL PRIMARY KEY,
-        action VARCHAR(100) NOT NULL,
-        entity_type VARCHAR(50),
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        action TEXT NOT NULL,
+        entity_type TEXT,
         entity_id INTEGER,
         user_id INTEGER,
         details TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
 
-    console.log('✅ Database initialized successfully');
-    isConnected = true;
+    console.log('✅ Database tables initialized');
 
     // Insert sample rooms if not existing
-    const roomsCount = await pool.query('SELECT COUNT(*) FROM rooms');
-    if (roomsCount.rows[0].count === '0') {
-      await pool.query(`
-        INSERT INTO rooms (room_number, status, price_per_night) VALUES
-        ('101', 'available', 100),
-        ('102', 'occupied', 100),
-        ('103', 'available', 120),
-        ('104', 'occupied', 120)
-      `);
+    const roomCount = queryOne('SELECT COUNT(*) as count FROM rooms');
+    if (roomCount.count === 0) {
+      const insertRoom = db.prepare('INSERT INTO rooms (room_number, status, price_per_night) VALUES (?, ?, ?)');
+      db.exec('BEGIN');
+      insertRow('101', 'available', 100);
+      insertRow('102', 'occupied', 100);
+      insertRow('103', 'available', 120);
+      insertRow('104', 'occupied', 120);
+      db.exec('COMMIT');
+      
+      function insertRow(roomNum, stat, price) {
+        insertRoom.run(roomNum, stat, price);
+      }
+      
       console.log('✅ Sample rooms inserted');
     }
 
   } catch (err) {
-    console.error('⚠️  Database initialization error:', err.message);
-    console.log('⚠️  Falling back to in-memory storage...');
+    console.error('❌ Database initialization error:', err.message);
     isConnected = false;
   }
 }
 
-// In-memory storage fallback
-const inMemoryDB = {
-  rooms: [
-    { id: 1, room_number: '101', status: 'available', price_per_night: 100 },
-    { id: 2, room_number: '102', status: 'occupied', price_per_night: 100 },
-    { id: 3, room_number: '103', status: 'available', price_per_night: 120 },
-    { id: 4, room_number: '104', status: 'occupied', price_per_night: 120 }
-  ],
-  bookings: [],
-  payments: [],
-  expenses: [],
-  auditLogs: []
-};
-
-module.exports = { pool, initializeDatabase, isConnected: () => isConnected, inMemoryDB };
+module.exports = { db, query, queryOne, execute, initializeDatabase, isConnected: () => isConnected };
