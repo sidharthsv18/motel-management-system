@@ -34,6 +34,7 @@ const users = {
 // ========== LOGIN ==========
 app.post('/api/auth/login', (req, res) => {
   try {
+    console.log('Login request - req.body:', JSON.stringify(req.body));
     const { email, password } = req.body || {};
 
     if (!email || !password) {
