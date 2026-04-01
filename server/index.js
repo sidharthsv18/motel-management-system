@@ -33,33 +33,38 @@ const users = {
 
 // ========== LOGIN ==========
 app.post('/api/auth/login', (req, res) => {
-  const { email, password } = req.body;
+  try {
+    const { email, password } = req.body || {};
 
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email and password required' });
-  }
-
-  const user = users[email];
-
-  if (!user || user.password !== password) {
-    return res.status(401).json({ message: 'Invalid credentials' });
-  }
-
-  const token = jwt.sign(
-    { id: user.id, email: user.email, role: user.role },
-    JWT_SECRET,
-    { expiresIn: '24h' }
-  );
-
-  res.json({
-    token,
-    user: {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role
+    if (!email || !password) {
+      return res.status(400).json({ message: 'Email and password required' });
     }
-  });
+
+    const user = users[email];
+
+    if (!user || user.password !== password) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role },
+      JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role
+      }
+    });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ message: 'Login error: ' + err.message });
+  }
 });
 
 // ========== DASHBOARD ==========
