@@ -20,6 +20,11 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD || 'postgres'
 });
 
+console.log('📦 Database Config:');
+console.log('  Host:', process.env.DB_HOST || 'localhost (DEFAULT)');
+console.log('  Port:', process.env.DB_PORT || 5432);
+console.log('  Database:', process.env.DB_NAME || 'motel_db (DEFAULT)');
+
 // Initialize database tables
 pool.query(`
   CREATE TABLE IF NOT EXISTS bookings (
