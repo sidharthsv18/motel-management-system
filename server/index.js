@@ -358,6 +358,13 @@ app.delete('/api/bookings/:id', authenticateToken, requireOwner, (req, res) => {
       return res.status(404).json({ message: 'Booking not found' });
     }
 
+    // First, delete all related payments for this booking
+    const payments = query('SELECT * FROM payments WHERE booking_id = ?', [bookingId]);
+    payments.forEach(payment => {
+      execute('DELETE FROM payments WHERE id = ?', [payment.id]);
+      console.log(`Deleted payment ${payment.id} (cascade delete)`);
+    });
+
     // Delete the booking
     execute('DELETE FROM bookings WHERE id = ?', [bookingId]);
     console.log(`Booking ${bookingId} deleted successfully`);
