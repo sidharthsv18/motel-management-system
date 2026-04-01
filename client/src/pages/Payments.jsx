@@ -1,16 +1,65 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import Sidebar from '../components/Sidebar';
 
 function Payments() {
   const [showModal, setShowModal] = useState(false);
-  const [payments, setPayments] = useState([
-    { id: 1, bookingId: 1, totalAmount: 2000, paidAmount: 2000, paymentMethod: 'cash', paymentDate: '2023-10-01' }
-  ]);
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [formData, setFormData] = useState({
+    booking_id: '',
+    amount: '',
+    payment_method: 'cash'
+  });
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    fetchPayments();
+  }, []);
+
+  const fetchPayments = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/payments', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPayments(response.data || []);
+      setError('');
+    } catch (err) {
+      console.error('Error fetching payments:', err);
+      setError('Failed to load payments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // For demo, just close
-    setShowModal(false);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post('/api/payments',
+        {
+          ...formData,
+          booking_id: parseInt(formData.booking_id),
+          amount: parseFloat(formData.amount)
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setPayments([response.data, ...payments]);
+      setFormData({ booking_id: '', amount: '', payment_method: 'cash' });
+      setShowModal(false);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create payment');
+    }
   };
 
   return (
@@ -18,57 +67,65 @@ function Payments() {
       <Sidebar />
       <div className="main-content flex-1">
         <h1 className="page-title">Payments</h1>
-        <button className="btn" onClick={() => setShowModal(true)}>Add New Payment</button>
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Booking ID</th>
-              <th>Total Amount</th>
-              <th>Paid Amount</th>
-              <th>Payment Method</th>
-              <th>Payment Date</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map(p => (
-              <tr key={p.id}>
-                <td>{p.bookingId}</td>
-                <td>₹{p.totalAmount}</td>
-                <td>₹{p.paidAmount}</td>
-                <td>{p.paymentMethod}</td>
-                <td>{p.paymentDate}</td>
+        <button className="btn" onClick={() => setShowModal(true)} disabled={loading}>Add New Payment</button>
+        
+        {error && <div style={{ color: 'red', padding: '10px', margin: '10px 0' }}>{error}</div>}
+        
+        {loading ? (
+          <p>Loading payments...</p>
+        ) : (
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Method</th>
+                <th>Status</th>
+                <th>Date</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {payments && payments.length > 0 ? (
+                payments.map(p => (
+                  <tr key={p.id}>
+                    <td>{p.booking_id}</td>
+                    <td>{p.customer_name || 'N/A'}</td>
+                    <td>₹{parseFloat(p.amount).toFixed(2)}</td>
+                    <td>{p.payment_method}</td>
+                    <td>{p.status}</td>
+                    <td>{p.payment_date ? new Date(p.payment_date).toLocaleDateString() : 'N/A'}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr><td colSpan="6" style={{ textAlign: 'center' }}>No payments found</td></tr>
+              )}
+            </tbody>
+          </table>
+        )}
+
         {showModal && (
           <div className="modal">
             <div className="modal-content">
               <h2>Add New Payment</h2>
+              {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Booking ID</label>
-                  <input type="number" required />
+                  <input type="number" name="booking_id" value={formData.booking_id} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
-                  <label>Total Amount</label>
-                  <input type="number" min="0" required />
-                </div>
-                <div className="form-group">
-                  <label>Paid Amount</label>
-                  <input type="number" min="0" required />
+                  <label>Amount</label>
+                  <input type="number" name="amount" value={formData.amount} onChange={handleChange} min="0" step="0.01" required />
                 </div>
                 <div className="form-group">
                   <label>Payment Method</label>
-                  <select required>
-                    <option value="">Select Method</option>
+                  <select name="payment_method" value={formData.payment_method} onChange={handleChange} required>
                     <option value="cash">Cash</option>
+                    <option value="card">Card</option>
                     <option value="upi">UPI</option>
+                    <option value="bank">Bank Transfer</option>
                   </select>
-                </div>
-                <div className="form-group">
-                  <label>Payment Date</label>
-                  <input type="date" required />
                 </div>
                 <div className="modal-buttons">
                   <button type="button" className="btn btn-secondary" onClick={() => setShowModal(false)}>Cancel</button>
