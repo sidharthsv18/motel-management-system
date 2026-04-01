@@ -226,6 +226,5 @@ function Bookings() {
     </div>
   );
 }
-}
 
 export default Bookings;
