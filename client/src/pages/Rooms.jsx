@@ -21,13 +21,20 @@ function Rooms() {
     fetchRooms();
   }, []);
 
-  // Clear error and success when modal opens
+  // Clear error and success when add modal opens
   useEffect(() => {
     if (showModal) {
       setError('');
       setSuccess('');
     }
   }, [showModal]);
+
+  // Clear error and success when delete modal opens/closes
+  useEffect(() => {
+    if (!showDeleteModal) {
+      setError('');
+    }
+  }, [showDeleteModal]);
 
   // Auto-hide error after 3 seconds
   useEffect(() => {
@@ -96,9 +103,18 @@ function Rooms() {
       setError('');
       const token = localStorage.getItem('token');
       
-      await axios.delete(`/api/rooms/${selectedRoomForDelete.id}`, {
+      if (!selectedRoomForDelete || !selectedRoomForDelete.id) {
+        setError('Invalid room selected');
+        return;
+      }
+
+      console.log(`Deleting room ${selectedRoomForDelete.id}...`);
+      
+      const response = await axios.delete(`/api/rooms/${selectedRoomForDelete.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      console.log('Delete response:', response.data);
 
       setRooms(rooms.filter(r => r.id !== selectedRoomForDelete.id));
       setSuccess('Room deleted successfully!');
@@ -106,7 +122,8 @@ function Rooms() {
       setSelectedRoomForDelete(null);
     } catch (err) {
       console.error('Error deleting room:', err);
-      setError(err.response?.data?.message || 'Failed to delete room');
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to delete room';
+      setError(errorMsg);
     }
   };
 

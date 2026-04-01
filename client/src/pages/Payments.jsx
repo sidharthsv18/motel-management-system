@@ -24,13 +24,20 @@ function Payments() {
     fetchBookings();
   }, []);
 
-  // Clear error and success when modal opens
+  // Clear error and success when add modal opens
   useEffect(() => {
     if (showModal) {
       setError('');
       setSuccess('');
     }
   }, [showModal]);
+
+  // Clear error and success when delete modal opens/closes
+  useEffect(() => {
+    if (!showDeleteModal) {
+      setError('');
+    }
+  }, [showDeleteModal]);
 
   // Auto-hide error after 3 seconds
   useEffect(() => {
@@ -124,9 +131,18 @@ function Payments() {
       setError('');
       const token = localStorage.getItem('token');
       
-      await axios.delete(`/api/payments/${selectedPaymentForDelete.id}`, {
+      if (!selectedPaymentForDelete || !selectedPaymentForDelete.id) {
+        setError('Invalid payment selected');
+        return;
+      }
+
+      console.log(`Deleting payment ${selectedPaymentForDelete.id}...`);
+      
+      const response = await axios.delete(`/api/payments/${selectedPaymentForDelete.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      console.log('Delete response:', response.data);
 
       setPayments(payments.filter(p => p.id !== selectedPaymentForDelete.id));
       setSuccess('Payment deleted successfully!');
@@ -134,7 +150,8 @@ function Payments() {
       setSelectedPaymentForDelete(null);
     } catch (err) {
       console.error('Error deleting payment:', err);
-      setError(err.response?.data?.message || 'Failed to delete payment');
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to delete payment';
+      setError(errorMsg);
     }
   };
 

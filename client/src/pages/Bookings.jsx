@@ -28,13 +28,20 @@ function Bookings() {
     fetchRooms();
   }, []);
 
-  // Clear error when modal opens
+  // Clear error and success when add modal opens
   useEffect(() => {
     if (showModal) {
       setError('');
       setSuccess('');
     }
   }, [showModal]);
+
+  // Clear error and success when delete modal opens/closes
+  useEffect(() => {
+    if (!showDeleteModal) {
+      setError('');
+    }
+  }, [showDeleteModal]);
 
   // Auto-hide error after 3 seconds
   useEffect(() => {
@@ -130,9 +137,18 @@ function Bookings() {
       setError('');
       const token = localStorage.getItem('token');
       
-      await axios.delete(`/api/bookings/${selectedBookingForDelete.id}`, {
+      if (!selectedBookingForDelete || !selectedBookingForDelete.id) {
+        setError('Invalid booking selected');
+        return;
+      }
+
+      console.log(`Deleting booking ${selectedBookingForDelete.id}...`);
+      
+      const response = await axios.delete(`/api/bookings/${selectedBookingForDelete.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      console.log('Delete response:', response.data);
 
       // Remove deleted booking from state
       setBookings(bookings.filter(b => b.id !== selectedBookingForDelete.id));
@@ -141,7 +157,8 @@ function Bookings() {
       setSelectedBookingForDelete(null);
     } catch (err) {
       console.error('Error deleting booking:', err);
-      setError(err.response?.data?.message || 'Failed to delete booking');
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to delete booking';
+      setError(errorMsg);
     }
   };
 

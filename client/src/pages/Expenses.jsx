@@ -22,13 +22,20 @@ function Expenses() {
     fetchExpenses();
   }, []);
 
-  // Clear error and success when modal opens
+  // Clear error and success when add modal opens
   useEffect(() => {
     if (showModal) {
       setError('');
       setSuccess('');
     }
   }, [showModal]);
+
+  // Clear error and success when delete modal opens/closes
+  useEffect(() => {
+    if (!showDeleteModal) {
+      setError('');
+    }
+  }, [showDeleteModal]);
 
   // Auto-hide error after 3 seconds
   useEffect(() => {
@@ -97,9 +104,18 @@ function Expenses() {
       setError('');
       const token = localStorage.getItem('token');
       
-      await axios.delete(`/api/expenses/${selectedExpenseForDelete.id}`, {
+      if (!selectedExpenseForDelete || !selectedExpenseForDelete.id) {
+        setError('Invalid expense selected');
+        return;
+      }
+
+      console.log(`Deleting expense ${selectedExpenseForDelete.id}...`);
+      
+      const response = await axios.delete(`/api/expenses/${selectedExpenseForDelete.id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+
+      console.log('Delete response:', response.data);
 
       setExpenses(expenses.filter(e => e.id !== selectedExpenseForDelete.id));
       setSuccess('Expense deleted successfully!');
@@ -107,7 +123,8 @@ function Expenses() {
       setSelectedExpenseForDelete(null);
     } catch (err) {
       console.error('Error deleting expense:', err);
-      setError(err.response?.data?.message || 'Failed to delete expense');
+      const errorMsg = err.response?.data?.message || err.message || 'Failed to delete expense';
+      setError(errorMsg);
     }
   };
 

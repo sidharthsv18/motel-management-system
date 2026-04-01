@@ -348,105 +348,117 @@ app.post('/api/expenses', (req, res) => {
 // ========== DELETE ENDPOINTS (Owner only) ==========
 app.delete('/api/bookings/:id', authenticateToken, requireOwner, (req, res) => {
   try {
-    const { id } = req.params;
+    const bookingId = parseInt(req.params.id, 10);
+    console.log(`Delete request: booking ID=${bookingId}, user ID=${req.user.id}, role=${req.user.role}`);
     
     // Get booking details before deletion for audit log
-    const booking = queryOne('SELECT * FROM bookings WHERE id = ?', [id]);
+    const booking = queryOne('SELECT * FROM bookings WHERE id = ?', [bookingId]);
     if (!booking) {
+      console.log(`Booking ${bookingId} not found`);
       return res.status(404).json({ message: 'Booking not found' });
     }
 
     // Delete the booking
-    execute('DELETE FROM bookings WHERE id = ?', [id]);
+    execute('DELETE FROM bookings WHERE id = ?', [bookingId]);
+    console.log(`Booking ${bookingId} deleted successfully`);
 
     // Log deletion to audit
     execute(
       'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, changes) VALUES (?, ?, ?, ?, ?)',
-      ['DELETE', 'BOOKING', id, req.user.id, JSON.stringify(booking)]
+      ['DELETE', 'BOOKING', bookingId, req.user.id, JSON.stringify(booking)]
     );
 
     res.json({ message: 'Booking deleted successfully' });
   } catch (err) {
     console.error('Delete booking error:', err);
-    res.status(500).json({ message: 'Error deleting booking' });
+    res.status(500).json({ message: 'Error deleting booking: ' + err.message });
   }
 });
 
 app.delete('/api/payments/:id', authenticateToken, requireOwner, (req, res) => {
   try {
-    const { id } = req.params;
+    const paymentId = parseInt(req.params.id, 10);
+    console.log(`Delete request: payment ID=${paymentId}, user ID=${req.user.id}, role=${req.user.role}`);
     
     // Get payment details before deletion for audit log
-    const payment = queryOne('SELECT * FROM payments WHERE id = ?', [id]);
+    const payment = queryOne('SELECT * FROM payments WHERE id = ?', [paymentId]);
     if (!payment) {
+      console.log(`Payment ${paymentId} not found`);
       return res.status(404).json({ message: 'Payment not found' });
     }
 
     // Delete the payment
-    execute('DELETE FROM payments WHERE id = ?', [id]);
+    execute('DELETE FROM payments WHERE id = ?', [paymentId]);
+    console.log(`Payment ${paymentId} deleted successfully`);
 
     // Log deletion to audit
     execute(
       'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, changes) VALUES (?, ?, ?, ?, ?)',
-      ['DELETE', 'PAYMENT', id, req.user.id, JSON.stringify(payment)]
+      ['DELETE', 'PAYMENT', paymentId, req.user.id, JSON.stringify(payment)]
     );
 
     res.json({ message: 'Payment deleted successfully' });
   } catch (err) {
     console.error('Delete payment error:', err);
-    res.status(500).json({ message: 'Error deleting payment' });
+    res.status(500).json({ message: 'Error deleting payment: ' + err.message });
   }
 });
 
 app.delete('/api/expenses/:id', authenticateToken, requireOwner, (req, res) => {
   try {
-    const { id } = req.params;
+    const expenseId = parseInt(req.params.id, 10);
+    console.log(`Delete request: expense ID=${expenseId}, user ID=${req.user.id}, role=${req.user.role}`);
     
     // Get expense details before deletion for audit log
-    const expense = queryOne('SELECT * FROM expenses WHERE id = ?', [id]);
+    const expense = queryOne('SELECT * FROM expenses WHERE id = ?', [expenseId]);
     if (!expense) {
+      console.log(`Expense ${expenseId} not found`);
       return res.status(404).json({ message: 'Expense not found' });
     }
 
     // Delete the expense
-    execute('DELETE FROM expenses WHERE id = ?', [id]);
+    execute('DELETE FROM expenses WHERE id = ?', [expenseId]);
+    console.log(`Expense ${expenseId} deleted successfully`);
 
     // Log deletion to audit
     execute(
       'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, changes) VALUES (?, ?, ?, ?, ?)',
-      ['DELETE', 'EXPENSE', id, req.user.id, JSON.stringify(expense)]
+      ['DELETE', 'EXPENSE', expenseId, req.user.id, JSON.stringify(expense)]
     );
 
     res.json({ message: 'Expense deleted successfully' });
   } catch (err) {
     console.error('Delete expense error:', err);
-    res.status(500).json({ message: 'Error deleting expense' });
+    res.status(500).json({ message: 'Error deleting expense: ' + err.message });
   }
 });
 
 app.delete('/api/rooms/:id', authenticateToken, requireOwner, (req, res) => {
   try {
-    const { id } = req.params;
+    const roomId = parseInt(req.params.id, 10);
+    console.log(`Delete request: room ID=${roomId}, user ID=${req.user.id}, role=${req.user.role}`);
     
     // Get room details before deletion for audit log
-    const room = queryOne('SELECT * FROM rooms WHERE id = ?', [id]);
+    const room = queryOne('SELECT * FROM rooms WHERE id = ?', [roomId]);
     if (!room) {
+      console.log(`Room ${roomId} not found`);
       return res.status(404).json({ message: 'Room not found' });
     }
 
     // Delete the room
-    execute('DELETE FROM rooms WHERE id = ?', [id]);
+    execute('DELETE FROM rooms WHERE id = ?', [roomId]);
+    console.log(`Room ${roomId} deleted successfully`);
 
     // Log deletion to audit
     execute(
       'INSERT INTO audit_logs (action, entity_type, entity_id, user_id, changes) VALUES (?, ?, ?, ?, ?)',
-      ['DELETE', 'ROOM', id, req.user.id, JSON.stringify(room)]
+      ['DELETE', 'ROOM', roomId, req.user.id, JSON.stringify(room)]
     );
 
     res.json({ message: 'Room deleted successfully' });
   } catch (err) {
     console.error('Delete room error:', err);
-    res.status(500).json({ message: 'Error deleting room' });
+    res.status(500).json({ message: 'Error deleting room: ' + err.message });
   }
 });
 
