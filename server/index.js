@@ -122,7 +122,7 @@ app.post('/api/rooms', (req, res) => {
     const { room_number, status, price_per_night } = req.body;
     const result = execute(
       'INSERT INTO rooms (room_number, status, price_per_night) VALUES (?, ?, ?)',
-      [room_number, status || 'available', price_per_night]
+      [room_number, status || 'available', price_per_night || null]
     );
     const room = queryOne('SELECT * FROM rooms WHERE id = ?', [result.lastInsertRowid]);
     res.status(201).json(room);
@@ -210,12 +210,26 @@ app.get('/api/payments', (req, res) => {
 
 app.post('/api/payments', (req, res) => {
   try {
-    const { booking_id, amount, payment_method, status } = req.body;
+    const { booking_id, customer_name, amount, payment_method, status } = req.body;
 
+    if (!booking_id || !customer_name || !amount) {
+      return res.status(400).json({ message: 'Missing required fields: booking_id, customer_name, and amount' });
+    }
+
+    // Verify booking exists
+    const booking = queryOne('SELECT * FROM bookings WHERE id = ?', [booking_id]);
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    // Create payment
     const result = execute(
       'INSERT INTO payments (booking_id, amount, payment_method, status, payment_date) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)',
       [booking_id, amount, payment_method || 'cash', status || 'completed']
     );
+
+    // Update booking status to 'paid'
+    execute('UPDATE bookings SET status = ? WHERE id = ?', ['paid', booking_id]);
 
     // Log to audit
     execute(

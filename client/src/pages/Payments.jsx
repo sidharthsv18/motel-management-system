@@ -9,6 +9,7 @@ function Payments() {
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
     booking_id: '',
+    customer_name: '',
     amount: '',
     payment_method: 'cash'
   });
@@ -55,7 +56,7 @@ function Payments() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setPayments([response.data, ...payments]);
-      setFormData({ booking_id: '', amount: '', payment_method: 'cash' });
+      setFormData({ booking_id: '', customer_name: '', amount: '', payment_method: 'cash' });
       setShowModal(false);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create payment');
@@ -113,6 +114,10 @@ function Payments() {
                 <div className="form-group">
                   <label>Booking ID</label>
                   <input type="number" name="booking_id" value={formData.booking_id} onChange={handleChange} required />
+                </div>
+                <div className="form-group">
+                  <label>Customer Name</label>
+                  <input type="text" name="customer_name" value={formData.customer_name} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
                   <label>Amount</label>

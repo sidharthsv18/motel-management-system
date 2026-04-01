@@ -52,7 +52,7 @@ function initializeDatabase() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         room_number TEXT UNIQUE NOT NULL,
         status TEXT DEFAULT 'available',
-        price_per_night REAL NOT NULL,
+        price_per_night REAL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -118,19 +118,24 @@ function initializeDatabase() {
     // Insert sample rooms if not existing
     const roomCount = queryOne('SELECT COUNT(*) as count FROM rooms');
     if (roomCount.count === 0) {
-      const insertRoom = db.prepare('INSERT INTO rooms (room_number, status, price_per_night) VALUES (?, ?, ?)');
-      db.exec('BEGIN');
-      insertRow('101', 'available', 100);
-      insertRow('102', 'occupied', 100);
-      insertRow('103', 'available', 120);
-      insertRow('104', 'occupied', 120);
-      db.exec('COMMIT');
+      // Delete any existing rooms first
+      db.prepare('DELETE FROM rooms').run();
       
-      function insertRow(roomNum, stat, price) {
-        insertRoom.run(roomNum, stat, price);
+      const insertRoom = db.prepare('INSERT INTO rooms (room_number, status) VALUES (?, ?)');
+      db.exec('BEGIN');
+      
+      // Add rooms 401-407 (7 rooms)
+      for (let i = 401; i <= 407; i++) {
+        insertRoom.run(i.toString(), 'available');
       }
       
-      console.log('✅ Sample rooms inserted');
+      // Add rooms 501-509 (9 rooms)
+      for (let i = 501; i <= 509; i++) {
+        insertRoom.run(i.toString(), 'available');
+      }
+      
+      db.exec('COMMIT');
+      console.log('✅ Sample rooms inserted (16 total: 401-407, 501-509)');
     }
 
   } catch (err) {

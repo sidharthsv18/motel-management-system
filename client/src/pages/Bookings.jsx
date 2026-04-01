@@ -100,6 +100,7 @@ function Bookings() {
           <table className="table">
             <thead>
               <tr>
+                <th>Booking ID</th>
                 <th>Customer</th>
                 <th>Phone</th>
                 <th>Check-in</th>
@@ -114,6 +115,7 @@ function Bookings() {
               {bookings && bookings.length > 0 ? (
                 bookings.map(b => (
                   <tr key={b.id}>
+                    <td>{b.id}</td>
                     <td>{b.customer_name}</td>
                     <td>{b.phone}</td>
                     <td>{b.check_in}</td>
@@ -125,7 +127,7 @@ function Bookings() {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="8" style={{ textAlign: 'center' }}>No bookings found</td></tr>
+                <tr><td colSpan="9" style={{ textAlign: 'center' }}>No bookings found</td></tr>
               )}
             </tbody>
           </table>
