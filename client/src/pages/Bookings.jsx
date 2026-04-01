@@ -4,6 +4,8 @@ import Sidebar from '../components/Sidebar';
 
 function Bookings() {
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedBookingForDelete, setSelectedBookingForDelete] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [formData, setFormData] = useState({
@@ -17,12 +19,38 @@ function Bookings() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const userRole = localStorage.getItem('userRole');
 
   // Fetch bookings and rooms on component mount
   useEffect(() => {
     fetchBookings();
     fetchRooms();
   }, []);
+
+  // Clear error when modal opens
+  useEffect(() => {
+    if (showModal) {
+      setError('');
+      setSuccess('');
+    }
+  }, [showModal]);
+
+  // Auto-hide error after 3 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  // Auto-hide success after 3 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   const fetchBookings = async () => {
     try {
@@ -62,6 +90,7 @@ function Bookings() {
     e.preventDefault();
     try {
       setLoading(true);
+      setError('');
       const token = localStorage.getItem('token');
       
       // Convert room_id, guests, and price to numbers
@@ -86,13 +115,33 @@ function Bookings() {
         guests: '',
         price: ''
       });
+      setSuccess('Booking created successfully!');
       setShowModal(false);
-      setError('');
     } catch (err) {
       console.error('Error creating booking:', err);
       setError(err.response?.data?.message || 'Failed to create booking');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setError('');
+      const token = localStorage.getItem('token');
+      
+      await axios.delete(`/api/bookings/${selectedBookingForDelete.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Remove deleted booking from state
+      setBookings(bookings.filter(b => b.id !== selectedBookingForDelete.id));
+      setSuccess('Booking deleted successfully!');
+      setShowDeleteModal(false);
+      setSelectedBookingForDelete(null);
+    } catch (err) {
+      console.error('Error deleting booking:', err);
+      setError(err.response?.data?.message || 'Failed to delete booking');
     }
   };
 
@@ -103,7 +152,8 @@ function Bookings() {
         <h1 className="page-title">Bookings</h1>
         <button className="btn" onClick={() => setShowModal(true)} disabled={loading}>Add New Booking</button>
         
-        {error && <div style={{ color: 'red', padding: '10px', margin: '10px 0' }}>{error}</div>}
+        {error && <div style={{ color: 'red', padding: '10px', margin: '10px 0', backgroundColor: '#ffe6e6', borderRadius: '4px' }}>{error}</div>}
+        {success && <div style={{ color: 'green', padding: '10px', margin: '10px 0', backgroundColor: '#e6ffe6', borderRadius: '4px' }}>{success}</div>}
         
         {loading && <p>Loading...</p>}
         
@@ -120,6 +170,7 @@ function Bookings() {
                 <th>Guests</th>
                 <th>Price</th>
                 <th>Status</th>
+                {userRole === 'owner' && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -135,10 +186,24 @@ function Bookings() {
                     <td>{b.guests}</td>
                     <td>₹{parseFloat(b.price).toFixed(2)}</td>
                     <td>{b.status}</td>
+                    {userRole === 'owner' && (
+                      <td>
+                        <button 
+                          className="btn btn-danger" 
+                          onClick={() => {
+                            setSelectedBookingForDelete(b);
+                            setShowDeleteModal(true);
+                          }}
+                          style={{ fontSize: '12px', padding: '4px 8px' }}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="9" style={{ textAlign: 'center' }}>No bookings found</td></tr>
+                <tr><td colSpan={userRole === 'owner' ? '10' : '9'} style={{ textAlign: 'center' }}>No bookings found</td></tr>
               )}
             </tbody>
           </table>
@@ -148,7 +213,7 @@ function Bookings() {
           <div className="modal">
             <div className="modal-content">
               <h2>Add New Booking</h2>
-              {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
+              {error && <div style={{ color: 'red', marginBottom: '10px', backgroundColor: '#ffe6e6', padding: '8px', borderRadius: '4px' }}>{error}</div>}
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Customer Name</label>
@@ -234,6 +299,36 @@ function Bookings() {
                   <button type="submit" className="btn" disabled={loading}>Save Booking</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {showDeleteModal && selectedBookingForDelete && (
+          <div className="modal">
+            <div className="modal-content" style={{ maxWidth: '400px' }}>
+              <h2>Confirm Delete</h2>
+              <p>Are you sure you want to delete booking #{selectedBookingForDelete.id} for {selectedBookingForDelete.customer_name}?</p>
+              <p style={{ color: '#666', fontSize: '12px' }}>This action cannot be undone.</p>
+              <div className="modal-buttons">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setSelectedBookingForDelete(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger" 
+                  onClick={handleDelete}
+                  style={{ backgroundColor: '#dc3545' }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         )}

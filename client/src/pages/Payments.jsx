@@ -4,21 +4,49 @@ import Sidebar from '../components/Sidebar';
 
 function Payments() {
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedPaymentForDelete, setSelectedPaymentForDelete] = useState(null);
   const [payments, setPayments] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [formData, setFormData] = useState({
     booking_id: '',
     customer_name: '',
     amount: '',
     payment_method: 'cash'
   });
+  const userRole = localStorage.getItem('userRole');
 
   useEffect(() => {
     fetchPayments();
     fetchBookings();
   }, []);
+
+  // Clear error and success when modal opens
+  useEffect(() => {
+    if (showModal) {
+      setError('');
+      setSuccess('');
+    }
+  }, [showModal]);
+
+  // Auto-hide error after 3 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  // Auto-hide success after 3 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   const fetchPayments = async () => {
     try {
@@ -72,6 +100,7 @@ function Payments() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setError('');
       const token = localStorage.getItem('token');
       const response = await axios.post('/api/payments',
         {
@@ -83,9 +112,29 @@ function Payments() {
       );
       setPayments([response.data, ...payments]);
       setFormData({ booking_id: '', customer_name: '', amount: '', payment_method: 'cash' });
+      setSuccess('Payment created successfully!');
       setShowModal(false);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create payment');
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setError('');
+      const token = localStorage.getItem('token');
+      
+      await axios.delete(`/api/payments/${selectedPaymentForDelete.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setPayments(payments.filter(p => p.id !== selectedPaymentForDelete.id));
+      setSuccess('Payment deleted successfully!');
+      setShowDeleteModal(false);
+      setSelectedPaymentForDelete(null);
+    } catch (err) {
+      console.error('Error deleting payment:', err);
+      setError(err.response?.data?.message || 'Failed to delete payment');
     }
   };
 
@@ -96,7 +145,8 @@ function Payments() {
         <h1 className="page-title">Payments</h1>
         <button className="btn" onClick={() => setShowModal(true)} disabled={loading}>Add New Payment</button>
         
-        {error && <div style={{ color: 'red', padding: '10px', margin: '10px 0' }}>{error}</div>}
+        {error && <div style={{ color: 'red', padding: '10px', margin: '10px 0', backgroundColor: '#ffe6e6', borderRadius: '4px' }}>{error}</div>}
+        {success && <div style={{ color: 'green', padding: '10px', margin: '10px 0', backgroundColor: '#e6ffe6', borderRadius: '4px' }}>{success}</div>}
         
         {loading ? (
           <p>Loading payments...</p>
@@ -110,6 +160,7 @@ function Payments() {
                 <th>Method</th>
                 <th>Status</th>
                 <th>Date</th>
+                {userRole === 'owner' && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -122,10 +173,24 @@ function Payments() {
                     <td>{p.payment_method}</td>
                     <td>{p.status}</td>
                     <td>{p.payment_date ? new Date(p.payment_date).toLocaleDateString() : 'N/A'}</td>
+                    {userRole === 'owner' && (
+                      <td>
+                        <button 
+                          className="btn btn-danger" 
+                          onClick={() => {
+                            setSelectedPaymentForDelete(p);
+                            setShowDeleteModal(true);
+                          }}
+                          style={{ fontSize: '12px', padding: '4px 8px' }}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="6" style={{ textAlign: 'center' }}>No payments found</td></tr>
+                <tr><td colSpan={userRole === 'owner' ? '7' : '6'} style={{ textAlign: 'center' }}>No payments found</td></tr>
               )}
             </tbody>
           </table>
@@ -135,7 +200,7 @@ function Payments() {
           <div className="modal">
             <div className="modal-content">
               <h2>Add New Payment</h2>
-              {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
+              {error && <div style={{ color: 'red', marginBottom: '10px', backgroundColor: '#ffe6e6', padding: '8px', borderRadius: '4px' }}>{error}</div>}
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Booking ID</label>
@@ -191,6 +256,36 @@ function Payments() {
                   <button type="submit" className="btn">Save Payment</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {showDeleteModal && selectedPaymentForDelete && (
+          <div className="modal">
+            <div className="modal-content" style={{ maxWidth: '400px' }}>
+              <h2>Confirm Delete</h2>
+              <p>Are you sure you want to delete payment #{selectedPaymentForDelete.id} for {selectedPaymentForDelete.customer_name}?</p>
+              <p style={{ color: '#666', fontSize: '12px' }}>This action cannot be undone.</p>
+              <div className="modal-buttons">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setSelectedPaymentForDelete(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger" 
+                  onClick={handleDelete}
+                  style={{ backgroundColor: '#dc3545' }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         )}

@@ -4,19 +4,47 @@ import Sidebar from '../components/Sidebar';
 
 function Expenses() {
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedExpenseForDelete, setSelectedExpenseForDelete] = useState(null);
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [formData, setFormData] = useState({
     category: '',
     description: '',
     amount: '',
     expense_date: new Date().toISOString().split('T')[0]
   });
+  const userRole = localStorage.getItem('userRole');
 
   useEffect(() => {
     fetchExpenses();
   }, []);
+
+  // Clear error and success when modal opens
+  useEffect(() => {
+    if (showModal) {
+      setError('');
+      setSuccess('');
+    }
+  }, [showModal]);
+
+  // Auto-hide error after 3 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  // Auto-hide success after 3 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   const fetchExpenses = async () => {
     try {
@@ -46,6 +74,7 @@ function Expenses() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setError('');
       const token = localStorage.getItem('token');
       const response = await axios.post('/api/expenses',
         {
@@ -56,9 +85,29 @@ function Expenses() {
       );
       setExpenses([response.data, ...expenses]);
       setFormData({ category: '', description: '', amount: '', expense_date: new Date().toISOString().split('T')[0] });
+      setSuccess('Expense created successfully!');
       setShowModal(false);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create expense');
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setError('');
+      const token = localStorage.getItem('token');
+      
+      await axios.delete(`/api/expenses/${selectedExpenseForDelete.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setExpenses(expenses.filter(e => e.id !== selectedExpenseForDelete.id));
+      setSuccess('Expense deleted successfully!');
+      setShowDeleteModal(false);
+      setSelectedExpenseForDelete(null);
+    } catch (err) {
+      console.error('Error deleting expense:', err);
+      setError(err.response?.data?.message || 'Failed to delete expense');
     }
   };
 
@@ -69,7 +118,8 @@ function Expenses() {
         <h1 className="page-title">Expenses</h1>
         <button className="btn" onClick={() => setShowModal(true)} disabled={loading}>Add New Expense</button>
         
-        {error && <div style={{ color: 'red', padding: '10px', margin: '10px 0' }}>{error}</div>}
+        {error && <div style={{ color: 'red', padding: '10px', margin: '10px 0', backgroundColor: '#ffe6e6', borderRadius: '4px' }}>{error}</div>}
+        {success && <div style={{ color: 'green', padding: '10px', margin: '10px 0', backgroundColor: '#e6ffe6', borderRadius: '4px' }}>{success}</div>}
         
         {loading ? (
           <p>Loading expenses...</p>
@@ -81,6 +131,7 @@ function Expenses() {
                 <th>Category</th>
                 <th>Description</th>
                 <th>Amount</th>
+                {userRole === 'owner' && <th>Actions</th>}
               </tr>
             </thead>
             <tbody>
@@ -91,10 +142,24 @@ function Expenses() {
                     <td>{e.category}</td>
                     <td>{e.description || '-'}</td>
                     <td>₹{parseFloat(e.amount).toFixed(2)}</td>
+                    {userRole === 'owner' && (
+                      <td>
+                        <button 
+                          className="btn btn-danger" 
+                          onClick={() => {
+                            setSelectedExpenseForDelete(e);
+                            setShowDeleteModal(true);
+                          }}
+                          style={{ fontSize: '12px', padding: '4px 8px' }}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    )}
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan="4" style={{ textAlign: 'center' }}>No expenses found</td></tr>
+                <tr><td colSpan={userRole === 'owner' ? '5' : '4'} style={{ textAlign: 'center' }}>No expenses found</td></tr>
               )}
             </tbody>
           </table>
@@ -104,7 +169,7 @@ function Expenses() {
           <div className="modal">
             <div className="modal-content">
               <h2>Add New Expense</h2>
-              {error && <div style={{ color: 'red', marginBottom: '10px' }}>{error}</div>}
+              {error && <div style={{ color: 'red', marginBottom: '10px', backgroundColor: '#ffe6e6', padding: '8px', borderRadius: '4px' }}>{error}</div>}
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Date</label>
@@ -135,6 +200,36 @@ function Expenses() {
                   <button type="submit" className="btn">Save Expense</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {showDeleteModal && selectedExpenseForDelete && (
+          <div className="modal">
+            <div className="modal-content" style={{ maxWidth: '400px' }}>
+              <h2>Confirm Delete</h2>
+              <p>Are you sure you want to delete expense #{selectedExpenseForDelete.id} ({selectedExpenseForDelete.category})?</p>
+              <p style={{ color: '#666', fontSize: '12px' }}>This action cannot be undone.</p>
+              <div className="modal-buttons">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setSelectedExpenseForDelete(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger" 
+                  onClick={handleDelete}
+                  style={{ backgroundColor: '#dc3545' }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         )}

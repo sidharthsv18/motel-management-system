@@ -6,16 +6,44 @@ function Rooms() {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedRoomForDelete, setSelectedRoomForDelete] = useState(null);
   const [formData, setFormData] = useState({
     room_number: '',
     status: 'available',
     price_per_night: ''
   });
+  const userRole = localStorage.getItem('userRole');
 
   useEffect(() => {
     fetchRooms();
   }, []);
+
+  // Clear error and success when modal opens
+  useEffect(() => {
+    if (showModal) {
+      setError('');
+      setSuccess('');
+    }
+  }, [showModal]);
+
+  // Auto-hide error after 3 seconds
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
+  // Auto-hide success after 3 seconds
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(''), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [success]);
 
   const fetchRooms = async () => {
     try {
@@ -45,6 +73,7 @@ function Rooms() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      setError('');
       const token = localStorage.getItem('token');
       const response = await axios.post('/api/rooms', 
         {
@@ -55,9 +84,29 @@ function Rooms() {
       );
       setRooms([response.data, ...rooms]);
       setFormData({ room_number: '', status: 'available', price_per_night: '' });
+      setSuccess('Room created successfully!');
       setShowModal(false);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create room');
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      setError('');
+      const token = localStorage.getItem('token');
+      
+      await axios.delete(`/api/rooms/${selectedRoomForDelete.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setRooms(rooms.filter(r => r.id !== selectedRoomForDelete.id));
+      setSuccess('Room deleted successfully!');
+      setShowDeleteModal(false);
+      setSelectedRoomForDelete(null);
+    } catch (err) {
+      console.error('Error deleting room:', err);
+      setError(err.response?.data?.message || 'Failed to delete room');
     }
   };
 
@@ -78,7 +127,8 @@ function Rooms() {
         <h1 className="page-title">Rooms</h1>
         <button className="btn" onClick={() => setShowModal(true)}>Add New Room</button>
         
-        {error && <div style={{ color: 'red', padding: '10px', margin: '10px 0' }}>{error}</div>}
+        {error && <div style={{ color: 'red', padding: '10px', margin: '10px 0', backgroundColor: '#ffe6e6', borderRadius: '4px' }}>{error}</div>}
+        {success && <div style={{ color: 'green', padding: '10px', margin: '10px 0', backgroundColor: '#e6ffe6', borderRadius: '4px' }}>{success}</div>}
         
         {loading ? (
           <p>Loading rooms...</p>
@@ -89,6 +139,18 @@ function Rooms() {
                 <h3>Room {r.room_number}</h3>
                 <p>{r.status}</p>
                 <p>₹{r.price_per_night}/night</p>
+                {userRole === 'owner' && (
+                  <button 
+                    className="btn btn-danger" 
+                    onClick={() => {
+                      setSelectedRoomForDelete(r);
+                      setShowDeleteModal(true);
+                    }}
+                    style={{ fontSize: '12px', padding: '4px 8px', marginTop: '10px', width: '100%' }}
+                  >
+                    Delete
+                  </button>
+                )}
               </div>
             ))}
           </div>
@@ -98,6 +160,7 @@ function Rooms() {
           <div className="modal">
             <div className="modal-content">
               <h2>Add New Room</h2>
+              {error && <div style={{ color: 'red', marginBottom: '10px', backgroundColor: '#ffe6e6', padding: '8px', borderRadius: '4px' }}>{error}</div>}
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Room Number</label>
@@ -121,6 +184,36 @@ function Rooms() {
                   <button type="submit" className="btn">Save Room</button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {showDeleteModal && selectedRoomForDelete && (
+          <div className="modal">
+            <div className="modal-content" style={{ maxWidth: '400px' }}>
+              <h2>Confirm Delete</h2>
+              <p>Are you sure you want to delete Room {selectedRoomForDelete.room_number}?</p>
+              <p style={{ color: '#666', fontSize: '12px' }}>This action cannot be undone.</p>
+              <div className="modal-buttons">
+                <button 
+                  type="button" 
+                  className="btn btn-secondary" 
+                  onClick={() => {
+                    setShowDeleteModal(false);
+                    setSelectedRoomForDelete(null);
+                  }}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-danger" 
+                  onClick={handleDelete}
+                  style={{ backgroundColor: '#dc3545' }}
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         )}
