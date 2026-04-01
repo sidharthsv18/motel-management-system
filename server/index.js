@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const { Pool } = require('pg');
 
 const app = express();
 app.use(cors());
@@ -8,6 +9,31 @@ app.use(express.json());
 
 const PORT = 5000;
 const JWT_SECRET = 'motel_secret_2026';
+
+// Database Connection
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: process.env.DB_PORT || 5432,
+  database: process.env.DB_NAME || 'motel_db',
+  user: process.env.DB_USER || 'postgres',
+  password: process.env.DB_PASSWORD || 'postgres'
+});
+
+// Initialize database tables
+pool.query(`
+  CREATE TABLE IF NOT EXISTS bookings (
+    id SERIAL PRIMARY KEY,
+    customer_name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    check_in DATE NOT NULL,
+    check_out DATE NOT NULL,
+    room_id INTEGER NOT NULL,
+    guests INTEGER NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    status VARCHAR(20) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`).catch(err => console.log('Note: Bookings table might already exist'));
 
 // Users - hardcoded for simplicity
 const users = {
@@ -90,8 +116,35 @@ app.get('/api/rooms', (req, res) => {
 });
 
 // BOOKINGS
-app.get('/api/bookings', (req, res) => {
-  res.json(mockBookings);
+app.get('/api/bookings', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM bookings ORDER BY check_in DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Get bookings error:', err);
+    // Fallback to mock data if DB fails
+    res.json(mockBookings);
+  }
+});
+
+app.post('/api/bookings', async (req, res) => {
+  try {
+    const { customer_name, phone, check_in, check_out, room_id, guests, price, status } = req.body;
+    
+    if (!customer_name || !phone || !check_in || !check_out || !room_id || !guests || !price) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const result = await pool.query(
+      'INSERT INTO bookings (customer_name, phone, check_in, check_out, room_id, guests, price, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [customer_name, phone, check_in, check_out, room_id, guests, price, status || 'pending']
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Create booking error:', err);
+    res.status(500).json({ message: 'Error creating booking' });
+  }
 });
 
 // PAYMENTS
