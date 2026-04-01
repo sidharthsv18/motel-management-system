@@ -20,10 +20,7 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD || 'postgres'
 });
 
-console.log('📦 Database Config:');
-console.log('  Host:', process.env.DB_HOST || 'localhost (DEFAULT)');
-console.log('  Port:', process.env.DB_PORT || 5432);
-console.log('  Database:', process.env.DB_NAME || 'motel_db (DEFAULT)');
+console.log('✅ Using in-memory storage for bookings (testing mode)');
 
 // Initialize database tables
 pool.query(`
@@ -71,6 +68,9 @@ const mockBookings = [
   { id: 1, customer_name: 'John Doe', phone: '1234567890', check_in: '2026-03-25', check_out: '2026-03-27', room_id: 1, guests: 2, price: 300, status: 'pending' },
   { id: 2, customer_name: 'Jane Smith', phone: '0987654321', check_in: '2026-03-24', check_out: '2026-03-26', room_id: 2, guests: 1, price: 400, status: 'checked-in' }
 ];
+
+// In-memory storage for bookings (will be replaced with database later)
+let bookingsDB = [...mockBookings];
 
 // LOGIN
 app.post('/api/auth/login', (req, res) => {
@@ -122,18 +122,16 @@ app.get('/api/rooms', (req, res) => {
 });
 
 // BOOKINGS
-app.get('/api/bookings', async (req, res) => {
+app.get('/api/bookings', (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM bookings ORDER BY check_in DESC');
-    res.json(result.rows);
+    res.json(bookingsDB);
   } catch (err) {
     console.error('Get bookings error:', err);
-    // Fallback to mock data if DB fails
-    res.json(mockBookings);
+    res.json([]);
   }
 });
 
-app.post('/api/bookings', async (req, res) => {
+app.post('/api/bookings', (req, res) => {
   try {
     const { customer_name, phone, check_in, check_out, room_id, guests, price, status } = req.body;
     
@@ -141,12 +139,21 @@ app.post('/api/bookings', async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const result = await pool.query(
-      'INSERT INTO bookings (customer_name, phone, check_in, check_out, room_id, guests, price, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
-      [customer_name, phone, check_in, check_out, room_id, guests, price, status || 'pending']
-    );
+    const newBooking = {
+      id: Math.max(...bookingsDB.map(b => b.id), 0) + 1,
+      customer_name,
+      phone,
+      check_in,
+      check_out,
+      room_id: parseInt(room_id),
+      guests: parseInt(guests),
+      price: parseFloat(price),
+      status: status || 'pending'
+    };
 
-    res.status(201).json(result.rows[0]);
+    bookingsDB.push(newBooking);
+    console.log('✅ Booking created:', newBooking.id);
+    res.status(201).json(newBooking);
   } catch (err) {
     console.error('Create booking error:', err);
     res.status(500).json({ message: 'Error creating booking' });
