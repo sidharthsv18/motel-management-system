@@ -108,6 +108,7 @@ function initializeDatabase() {
         entity_type TEXT,
         entity_id INTEGER,
         user_id INTEGER,
+        changes TEXT,
         details TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )

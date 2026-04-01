@@ -5,6 +5,7 @@ import Sidebar from '../components/Sidebar';
 function Bookings() {
   const [showModal, setShowModal] = useState(false);
   const [bookings, setBookings] = useState([]);
+  const [rooms, setRooms] = useState([]);
   const [formData, setFormData] = useState({
     customer_name: '',
     phone: '',
@@ -17,9 +18,10 @@ function Bookings() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Fetch bookings on component mount
+  // Fetch bookings and rooms on component mount
   useEffect(() => {
     fetchBookings();
+    fetchRooms();
   }, []);
 
   const fetchBookings = async () => {
@@ -36,6 +38,15 @@ function Bookings() {
       setError('Failed to load bookings');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRooms = async () => {
+    try {
+      const response = await axios.get('/api/rooms');
+      setRooms(response.data || []);
+    } catch (err) {
+      console.error('Error fetching rooms:', err);
     }
   };
 
@@ -188,8 +199,10 @@ function Bookings() {
                     required
                   >
                     <option value="">Select Room</option>
-                    {Array.from({length: 16}, (_, i) => (
-                      <option key={i+1} value={i+1}>Room {i+1}</option>
+                    {rooms.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        Room {room.room_number} {room.status === 'occupied' ? '(Occupied)' : '(Available)'}
+                      </option>
                     ))}
                   </select>
                 </div>

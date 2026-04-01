@@ -101,6 +101,11 @@ function Dashboard() {
             <div className="card">
               <h3>Available Rooms</h3>
               <p>{data.availableRooms}</p>
+              {data.availableRoomNumbers && data.availableRoomNumbers.length > 0 && (
+                <p style={{fontSize: '12px', color: '#666', marginTop: '8px'}}>
+                  Rooms: {data.availableRoomNumbers.join(', ')}
+                </p>
+              )}
             </div>
             <div className="card">
               <h3>Occupied Rooms</h3>

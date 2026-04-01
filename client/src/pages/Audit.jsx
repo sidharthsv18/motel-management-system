@@ -29,11 +29,21 @@ function Audit() {
     return new Date(dateString).toLocaleString();
   };
 
-  const formatChanges = (oldValues, newValues) => {
-    if (!oldValues && newValues) return 'Created new record';
-    if (oldValues && !newValues) return 'Deleted record';
-    if (oldValues && newValues) return 'Updated record';
-    return 'Unknown action';
+  const formatChanges = (changes) => {
+    try {
+      if (!changes) return 'Action recorded';
+      if (typeof changes === 'string') {
+        const parsed = JSON.parse(changes);
+        return Object.entries(parsed)
+          .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+          .join(', ');
+      }
+      return Object.entries(changes)
+        .map(([key, value]) => `${key}: ${JSON.stringify(value)}`)
+        .join(', ');
+    } catch {
+      return String(changes);
+    }
   };
 
   if (loading) {
@@ -77,26 +87,24 @@ function Audit() {
               <thead>
                 <tr>
                   <th>Timestamp</th>
-                  <th>User</th>
                   <th>Action</th>
-                  <th>Table</th>
-                  <th>Record ID</th>
-                  <th>Details</th>
+                  <th>Entity Type</th>
+                  <th>Entity ID</th>
+                  <th>Changes</th>
                 </tr>
               </thead>
               <tbody>
                 {auditLogs.map((log) => (
                   <tr key={log.id}>
                     <td>{formatDate(log.created_at)}</td>
-                    <td>{log.user_email}</td>
                     <td>
                       <span className={`action-badge action-${log.action.toLowerCase()}`}>
                         {log.action}
                       </span>
                     </td>
-                    <td>{log.table_name}</td>
-                    <td>{log.record_id || 'N/A'}</td>
-                    <td>{formatChanges(log.old_values, log.new_values)}</td>
+                    <td>{log.entity_type}</td>
+                    <td>#{log.entity_id || 'N/A'}</td>
+                    <td style={{fontSize: '12px', color: '#555'}}>{formatChanges(log.changes)}</td>
                   </tr>
                 ))}
               </tbody>

@@ -5,6 +5,7 @@ import Sidebar from '../components/Sidebar';
 function Payments() {
   const [showModal, setShowModal] = useState(false);
   const [payments, setPayments] = useState([]);
+  const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -16,6 +17,7 @@ function Payments() {
 
   useEffect(() => {
     fetchPayments();
+    fetchBookings();
   }, []);
 
   const fetchPayments = async () => {
@@ -35,12 +37,36 @@ function Payments() {
     }
   };
 
+  const fetchBookings = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/bookings', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setBookings(response.data || []);
+    } catch (err) {
+      console.error('Error fetching bookings:', err);
+    }
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
       [name]: value
     }));
+
+    // Auto-populate customer name and amount when booking ID is selected
+    if (name === 'booking_id' && value) {
+      const booking = bookings.find(b => b.id === parseInt(value));
+      if (booking) {
+        setFormData(prev => ({
+          ...prev,
+          customer_name: booking.customer_name,
+          amount: booking.price || ''
+        }));
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -113,15 +139,43 @@ function Payments() {
               <form onSubmit={handleSubmit}>
                 <div className="form-group">
                   <label>Booking ID</label>
-                  <input type="number" name="booking_id" value={formData.booking_id} onChange={handleChange} required />
+                  <select 
+                    name="booking_id" 
+                    value={formData.booking_id} 
+                    onChange={handleChange} 
+                    required
+                  >
+                    <option value="">Select Booking</option>
+                    {bookings.map(b => (
+                      <option key={b.id} value={b.id}>
+                        Booking #{b.id} - {b.customer_name} (₹{b.price})
+                      </option>
+                    ))}
+                  </select>
                 </div>
                 <div className="form-group">
                   <label>Customer Name</label>
-                  <input type="text" name="customer_name" value={formData.customer_name} onChange={handleChange} required />
+                  <input 
+                    type="text" 
+                    name="customer_name" 
+                    value={formData.customer_name} 
+                    onChange={handleChange} 
+                    placeholder="Auto-filled from booking"
+                    required 
+                  />
                 </div>
                 <div className="form-group">
                   <label>Amount</label>
-                  <input type="number" name="amount" value={formData.amount} onChange={handleChange} min="0" step="0.01" required />
+                  <input 
+                    type="number" 
+                    name="amount" 
+                    value={formData.amount} 
+                    onChange={handleChange} 
+                    placeholder="Auto-filled from booking price"
+                    min="0" 
+                    step="0.01" 
+                    required 
+                  />
                 </div>
                 <div className="form-group">
                   <label>Payment Method</label>
