@@ -34,9 +34,6 @@ const users = {
 // ========== LOGIN ==========
 app.post('/api/auth/login', (req, res) => {
   try {
-    console.log('Login request headers:', JSON.stringify(req.headers));
-    console.log('Login request - req.body:', JSON.stringify(req.body));
-    console.log('Request raw body type:', typeof req.body, 'Keys:', Object.keys(req.body || {}));
     const { email, password } = req.body || {};
 
     if (!email || !password) {
