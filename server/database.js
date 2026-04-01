@@ -1,16 +1,37 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'motel_db',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres'
-});
+// Try to connect to RDS, fall back to local if needed
+let pool;
+let isConnected = false;
+
+try {
+  pool = new Pool({
+    host: process.env.DB_HOST || 'localhost',
+    port: process.env.DB_PORT || 5432,
+    database: process.env.DB_NAME || 'motel_db',
+    user: process.env.DB_USER || 'postgres',
+    password: process.env.DB_PASSWORD || 'postgres',
+    connectionTimeoutMillis: 5000
+  });
+
+  // Test connection
+  pool.on('error', (err) => {
+    console.error('⚠️  Database pool error:', err.message);
+    isConnected = false;
+  });
+} catch (err) {
+  console.error('⚠️  Failed to create pool:', err.message);
+  pool = null;
+}
 
 // Initialize all tables
 async function initializeDatabase() {
+  if (!pool) {
+    console.log('⚠️  Database not available - using in-memory storage');
+    return;
+  }
+
   try {
     console.log('🔄 Initializing database...');
 
@@ -80,6 +101,7 @@ async function initializeDatabase() {
     `);
 
     console.log('✅ Database initialized successfully');
+    isConnected = true;
 
     // Insert sample rooms if not existing
     const roomsCount = await pool.query('SELECT COUNT(*) FROM rooms');
@@ -95,8 +117,24 @@ async function initializeDatabase() {
     }
 
   } catch (err) {
-    console.error('❌ Database initialization error:', err.message);
+    console.error('⚠️  Database initialization error:', err.message);
+    console.log('⚠️  Falling back to in-memory storage...');
+    isConnected = false;
   }
 }
 
-module.exports = { pool, initializeDatabase };
+// In-memory storage fallback
+const inMemoryDB = {
+  rooms: [
+    { id: 1, room_number: '101', status: 'available', price_per_night: 100 },
+    { id: 2, room_number: '102', status: 'occupied', price_per_night: 100 },
+    { id: 3, room_number: '103', status: 'available', price_per_night: 120 },
+    { id: 4, room_number: '104', status: 'occupied', price_per_night: 120 }
+  ],
+  bookings: [],
+  payments: [],
+  expenses: [],
+  auditLogs: []
+};
+
+module.exports = { pool, initializeDatabase, isConnected: () => isConnected, inMemoryDB };
