@@ -1,8 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const { Pool } = require('pg');
-require('dotenv').config();
+const { pool, initializeDatabase } = require('./database');
 
 const app = express();
 app.use(cors());
@@ -11,32 +10,8 @@ app.use(express.json());
 const PORT = 5000;
 const JWT_SECRET = 'motel_secret_2026';
 
-// Database Connection
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: process.env.DB_PORT || 5432,
-  database: process.env.DB_NAME || 'motel_db',
-  user: process.env.DB_USER || 'postgres',
-  password: process.env.DB_PASSWORD || 'postgres'
-});
-
-console.log('✅ Using in-memory storage for bookings (testing mode)');
-
-// Initialize database tables
-pool.query(`
-  CREATE TABLE IF NOT EXISTS bookings (
-    id SERIAL PRIMARY KEY,
-    customer_name VARCHAR(100) NOT NULL,
-    phone VARCHAR(20) NOT NULL,
-    check_in DATE NOT NULL,
-    check_out DATE NOT NULL,
-    room_id INTEGER NOT NULL,
-    guests INTEGER NOT NULL,
-    price DECIMAL(10, 2) NOT NULL,
-    status VARCHAR(20) DEFAULT 'pending',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  )
-`).catch(err => console.log('Note: Bookings table might already exist'));
+// Initialize database on startup
+initializeDatabase();
 
 // Users - hardcoded for simplicity
 const users = {
@@ -56,23 +31,7 @@ const users = {
   }
 };
 
-// Mock data
-const mockRooms = [
-  { id: 1, room_number: '101', status: 'available', price_per_night: 100 },
-  { id: 2, room_number: '102', status: 'occupied', price_per_night: 100 },
-  { id: 3, room_number: '103', status: 'available', price_per_night: 120 },
-  { id: 4, room_number: '104', status: 'occupied', price_per_night: 120 }
-];
-
-const mockBookings = [
-  { id: 1, customer_name: 'John Doe', phone: '1234567890', check_in: '2026-03-25', check_out: '2026-03-27', room_id: 1, guests: 2, price: 300, status: 'pending' },
-  { id: 2, customer_name: 'Jane Smith', phone: '0987654321', check_in: '2026-03-24', check_out: '2026-03-26', room_id: 2, guests: 1, price: 400, status: 'checked-in' }
-];
-
-// In-memory storage for bookings (will be replaced with database later)
-let bookingsDB = [...mockBookings];
-
-// LOGIN
+// ========== LOGIN ==========
 app.post('/api/auth/login', (req, res) => {
   const { email, password } = req.body;
 
@@ -103,91 +62,218 @@ app.post('/api/auth/login', (req, res) => {
   });
 });
 
-// DASHBOARD
-app.get('/api/dashboard', (req, res) => {
-  res.json({
-    todayCheckIns: 5,
-    todayCheckOuts: 3,
-    availableRooms: 8,
-    occupiedRooms: 12,
-    todayRevenue: 4500,
-    todayExpenses: 450,
-    todayProfit: 4050
-  });
-});
-
-// ROOMS
-app.get('/api/rooms', (req, res) => {
-  res.json(mockRooms);
-});
-
-// BOOKINGS
-app.get('/api/bookings', (req, res) => {
+// ========== DASHBOARD ==========
+app.get('/api/dashboard', async (req, res) => {
   try {
-    res.json(bookingsDB);
+    const [bookings, rooms, payments, expenses] = await Promise.all([
+      pool.query('SELECT COUNT(*) FROM bookings WHERE check_in::date = CURRENT_DATE'),
+      pool.query('SELECT COUNT(*) FROM rooms WHERE status = $1', ['occupied']),
+      pool.query('SELECT COALESCE(SUM(amount), 0) FROM payments WHERE payment_date::date = CURRENT_DATE'),
+      pool.query('SELECT COALESCE(SUM(amount), 0) FROM expenses WHERE expense_date = CURRENT_DATE')
+    ]);
+
+    const todayRevenue = parseFloat(payments.rows[0].coalesce) || 0;
+    const todayExpenses = parseFloat(expenses.rows[0].coalesce) || 0;
+
+    res.json({
+      todayCheckIns: parseInt(bookings.rows[0].count),
+      todayCheckOuts: 0,
+      availableRooms: 8,
+      occupiedRooms: parseInt(rooms.rows[0].count),
+      todayRevenue: todayRevenue,
+      todayExpenses: todayExpenses,
+      todayProfit: (todayRevenue - todayExpenses).toFixed(2)
+    });
   } catch (err) {
-    console.error('Get bookings error:', err);
-    res.json([]);
+    console.error('Dashboard error:', err);
+    res.status(500).json({ message: 'Error fetching dashboard data' });
   }
 });
 
-app.post('/api/bookings', (req, res) => {
+// ========== ROOMS ==========
+app.get('/api/rooms', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM rooms ORDER BY room_number ASC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Get rooms error:', err);
+    res.status(500).json({ message: 'Error fetching rooms' });
+  }
+});
+
+app.post('/api/rooms', async (req, res) => {
+  try {
+    const { room_number, status, price_per_night } = req.body;
+    const result = await pool.query(
+      'INSERT INTO rooms (room_number, status, price_per_night) VALUES ($1, $2, $3) RETURNING *',
+      [room_number, status || 'available', price_per_night]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Create room error:', err);
+    res.status(500).json({ message: 'Error creating room' });
+  }
+});
+
+// ========== BOOKINGS ==========
+app.get('/api/bookings', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT b.*, r.room_number FROM bookings b LEFT JOIN rooms r ON b.room_id = r.id ORDER BY b.check_in DESC'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Get bookings error:', err);
+    res.status(500).json({ message: 'Error fetching bookings' });
+  }
+});
+
+app.post('/api/bookings', async (req, res) => {
   try {
     const { customer_name, phone, check_in, check_out, room_id, guests, price, status } = req.body;
-    
+
     if (!customer_name || !phone || !check_in || !check_out || !room_id || !guests || !price) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
 
-    const newBooking = {
-      id: Math.max(...bookingsDB.map(b => b.id), 0) + 1,
-      customer_name,
-      phone,
-      check_in,
-      check_out,
-      room_id: parseInt(room_id),
-      guests: parseInt(guests),
-      price: parseFloat(price),
-      status: status || 'pending'
-    };
+    const result = await pool.query(
+      'INSERT INTO bookings (customer_name, phone, check_in, check_out, room_id, guests, price, status) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *',
+      [customer_name, phone, check_in, check_out, room_id, guests, price, status || 'pending']
+    );
 
-    bookingsDB.push(newBooking);
-    console.log('✅ Booking created:', newBooking.id);
-    res.status(201).json(newBooking);
+    // Log to audit
+    await pool.query(
+      'INSERT INTO audit_logs (action, entity_type, entity_id, user_id) VALUES ($1, $2, $3, $4)',
+      ['CREATE', 'BOOKING', result.rows[0].id, 1]
+    );
+
+    res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Create booking error:', err);
     res.status(500).json({ message: 'Error creating booking' });
   }
 });
 
-// PAYMENTS
-app.get('/api/payments', (req, res) => {
-  res.json([]);
+app.put('/api/bookings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const result = await pool.query(
+      'UPDATE bookings SET status = $1 WHERE id = $2 RETURNING *',
+      [status, id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Update booking error:', err);
+    res.status(500).json({ message: 'Error updating booking' });
+  }
 });
 
-// EXPENSES
-app.get('/api/expenses', (req, res) => {
-  res.json([]);
+// ========== PAYMENTS ==========
+app.get('/api/payments', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT p.*, b.customer_name FROM payments p LEFT JOIN bookings b ON p.booking_id = b.id ORDER BY p.created_at DESC'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Get payments error:', err);
+    res.status(500).json({ message: 'Error fetching payments' });
+  }
 });
 
-// AUDIT
-app.get('/api/audit', (req, res) => {
-  res.json([]);
+app.post('/api/payments', async (req, res) => {
+  try {
+    const { booking_id, amount, payment_method, status } = req.body;
+
+    const result = await pool.query(
+      'INSERT INTO payments (booking_id, amount, payment_method, status, payment_date) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) RETURNING *',
+      [booking_id, amount, payment_method || 'cash', status || 'completed']
+    );
+
+    // Log to audit
+    await pool.query(
+      'INSERT INTO audit_logs (action, entity_type, entity_id, user_id) VALUES ($1, $2, $3, $4)',
+      ['CREATE', 'PAYMENT', result.rows[0].id, 1]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Create payment error:', err);
+    res.status(500).json({ message: 'Error creating payment' });
+  }
 });
 
-// HEALTH CHECK
+// ========== EXPENSES ==========
+app.get('/api/expenses', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM expenses ORDER BY expense_date DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Get expenses error:', err);
+    res.status(500).json({ message: 'Error fetching expenses' });
+  }
+});
+
+app.post('/api/expenses', async (req, res) => {
+  try {
+    const { category, description, amount, expense_date } = req.body;
+
+    if (!category || !amount || !expense_date) {
+      return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    const result = await pool.query(
+      'INSERT INTO expenses (category, description, amount, expense_date) VALUES ($1, $2, $3, $4) RETURNING *',
+      [category, description || '', amount, expense_date]
+    );
+
+    // Log to audit
+    await pool.query(
+      'INSERT INTO audit_logs (action, entity_type, entity_id, user_id) VALUES ($1, $2, $3, $4)',
+      ['CREATE', 'EXPENSE', result.rows[0].id, 1]
+    );
+
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Create expense error:', err);
+    res.status(500).json({ message: 'Error creating expense' });
+  }
+});
+
+// ========== AUDIT LOGS ==========
+app.get('/api/audit', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT * FROM audit_logs ORDER BY created_at DESC LIMIT 100'
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Get audit logs error:', err);
+    res.status(500).json({ message: 'Error fetching audit logs' });
+  }
+});
+
+// ========== HEALTH CHECK ==========
 app.get('/', (req, res) => {
   res.json({ message: 'Motel Management API Running', status: 'OK' });
 });
 
-// ERROR HANDLER
+// ========== ERROR HANDLER ==========
 app.use((err, req, res, next) => {
   console.error(err);
   res.status(500).json({ message: 'Server error' });
 });
 
-// START
+// ========== START SERVER ==========
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n✅ Server started on port ${PORT}`);
+  console.log(`📦 Using PostgreSQL Database`);
   console.log(`Test: owner@motel.com / password123\n`);
 });
