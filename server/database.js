@@ -114,6 +114,19 @@ function initializeDatabase() {
       )
     `);
 
+    // Add 'changes' column if it doesn't exist (migration for existing databases)
+    try {
+      const columns = db.prepare("PRAGMA table_info(audit_logs)").all();
+      const hasChangesColumn = columns.some(col => col.name === 'changes');
+      if (!hasChangesColumn) {
+        console.log('🔄 Adding missing "changes" column to audit_logs table...');
+        db.exec('ALTER TABLE audit_logs ADD COLUMN changes TEXT');
+        console.log('✅ "changes" column added to audit_logs');
+      }
+    } catch (err) {
+      console.error('⚠️  Error checking/adding changes column:', err.message);
+    }
+
     console.log('✅ Database tables initialized');
 
     // Insert sample rooms if not existing
