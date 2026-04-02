@@ -155,6 +155,24 @@ function Payments() {
     }
   };
 
+  const handleCheckOut = async (bookingId) => {
+    try {
+      setError('');
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.put(`/api/bookings/${bookingId}/check-out`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Update bookings list with new status
+      setBookings(bookings.map(b => b.id === bookingId ? response.data : b));
+      setSuccess('Guest checked out successfully!');
+    } catch (err) {
+      console.error('Error checking out:', err);
+      setError(err.response?.data?.message || 'Failed to check out');
+    }
+  };
+
   return (
     <div className="flex">
       <Sidebar />
@@ -176,6 +194,8 @@ function Payments() {
                 <th>Amount</th>
                 <th>Method</th>
                 <th>Status</th>
+                <th>Booking Status</th>
+                <th>Check-out</th>
                 <th>Date</th>
                 {userRole === 'owner' && <th>Actions</th>}
               </tr>
@@ -189,6 +209,25 @@ function Payments() {
                     <td>₹{parseFloat(p.amount).toFixed(2)}</td>
                     <td>{p.payment_method}</td>
                     <td>{p.status}</td>
+                    <td>
+                      {p.status === 'checked_out' && <span style={{color: '#27ae60', fontWeight: 'bold'}}>✓ Checked Out</span>}
+                      {p.status === 'checked_in' && <span style={{color: '#f39c12'}}>Checked In</span>}
+                      {p.status === 'pending' && <span style={{color: '#95a5a6'}}>Pending</span>}
+                    </td>
+                    <td>
+                      {p.status !== 'checked_out' && (
+                        <button 
+                          className="btn" 
+                          onClick={() => handleCheckOut(p.booking_id)}
+                          style={{ fontSize: '12px', padding: '4px 8px', backgroundColor: '#27ae60' }}
+                        >
+                          Check-Out
+                        </button>
+                      )}
+                      {p.status === 'checked_out' && (
+                        <span style={{color: '#27ae60', fontWeight: 'bold'}}>✓</span>
+                      )}
+                    </td>
                     <td>{p.payment_date ? new Date(p.payment_date).toLocaleDateString() : 'N/A'}</td>
                     {userRole === 'owner' && (
                       <td>
@@ -207,7 +246,7 @@ function Payments() {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={userRole === 'owner' ? '7' : '6'} style={{ textAlign: 'center' }}>No payments found</td></tr>
+                <tr><td colSpan={userRole === 'owner' ? '9' : '8'} style={{ textAlign: 'center' }}>No payments found</td></tr>
               )}
             </tbody>
           </table>

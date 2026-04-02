@@ -162,6 +162,24 @@ function Bookings() {
     }
   };
 
+  const handleCheckIn = async (bookingId) => {
+    try {
+      setError('');
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.put(`/api/bookings/${bookingId}/check-in`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      // Update bookings list with new status
+      setBookings(bookings.map(b => b.id === bookingId ? response.data : b));
+      setSuccess('Guest checked in successfully!');
+    } catch (err) {
+      console.error('Error checking in:', err);
+      setError(err.response?.data?.message || 'Failed to check in');
+    }
+  };
+
   return (
     <div className="flex">
       <Sidebar />
@@ -187,6 +205,7 @@ function Bookings() {
                 <th>Guests</th>
                 <th>Price</th>
                 <th>Status</th>
+                <th>Check-in</th>
                 {userRole === 'owner' && <th>Actions</th>}
               </tr>
             </thead>
@@ -202,7 +221,25 @@ function Bookings() {
                     <td>{b.room_id}</td>
                     <td>{b.guests}</td>
                     <td>₹{parseFloat(b.price).toFixed(2)}</td>
-                    <td>{b.status}</td>
+                    <td>
+                      {b.status === 'checked_in' && <span style={{color: '#27ae60', fontWeight: 'bold'}}>✓ Checked In</span>}
+                      {b.status === 'checked_out' && <span style={{color: '#27ae60', fontWeight: 'bold'}}>✓ Checked Out</span>}
+                      {b.status === 'pending' && <span style={{color: '#f39c12'}}>Pending</span>}
+                    </td>
+                    <td>
+                      {b.status !== 'checked_in' && b.status !== 'checked_out' && (
+                        <button 
+                          className="btn" 
+                          onClick={() => handleCheckIn(b.id)}
+                          style={{ fontSize: '12px', padding: '4px 8px', backgroundColor: '#27ae60' }}
+                        >
+                          Check-In
+                        </button>
+                      )}
+                      {(b.status === 'checked_in' || b.status === 'checked_out') && (
+                        <span style={{color: '#27ae60', fontWeight: 'bold'}}>✓</span>
+                      )}
+                    </td>
                     {userRole === 'owner' && (
                       <td>
                         <button 
@@ -220,7 +257,7 @@ function Bookings() {
                   </tr>
                 ))
               ) : (
-                <tr><td colSpan={userRole === 'owner' ? '10' : '9'} style={{ textAlign: 'center' }}>No bookings found</td></tr>
+                <tr><td colSpan={userRole === 'owner' ? '11' : '10'} style={{ textAlign: 'center' }}>No bookings found</td></tr>
               )}
             </tbody>
           </table>

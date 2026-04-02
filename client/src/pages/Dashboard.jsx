@@ -200,18 +200,28 @@ function Dashboard() {
             <div className="list-card">
               <h3>Check-ins Today</h3>
               {data.checkInList && data.checkInList.length > 0 ? data.checkInList.map((checkIn, index) => (
-                <div key={index} className="list-item">
-                  <span>{checkIn.customer_name}</span>
-                  <span>Room {checkIn.room_number} • {checkIn.guests} guest{checkIn.guests > 1 ? 's' : ''}</span>
+                <div key={index} className="list-item" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <div>
+                    <span>{checkIn.customer_name}</span>
+                    <span style={{display: 'block', fontSize: '12px', color: '#666'}}>Room {checkIn.room_number} • {checkIn.guests} guest{checkIn.guests > 1 ? 's' : ''}</span>
+                  </div>
+                  {(checkIn.status === 'checked_in' || checkIn.status === 'checked_out') && (
+                    <span style={{fontSize: '20px', color: '#27ae60', fontWeight: 'bold'}}>✓</span>
+                  )}
                 </div>
               )) : <p className="no-data">No check-ins today</p>}
             </div>
             <div className="list-card">
               <h3>Check-outs Today</h3>
               {data.checkOutList && data.checkOutList.length > 0 ? data.checkOutList.map((checkOut, index) => (
-                <div key={index} className="list-item">
-                  <span>{checkOut.customer_name}</span>
-                  <span>Room {checkOut.room_number} • {checkOut.guests} guest{checkOut.guests > 1 ? 's' : ''}</span>
+                <div key={index} className="list-item" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <div>
+                    <span>{checkOut.customer_name}</span>
+                    <span style={{display: 'block', fontSize: '12px', color: '#666'}}>Room {checkOut.room_number} • {checkOut.guests} guest{checkOut.guests > 1 ? 's' : ''}</span>
+                  </div>
+                  {checkOut.status === 'checked_out' && (
+                    <span style={{fontSize: '20px', color: '#27ae60', fontWeight: 'bold'}}>✓</span>
+                  )}
                 </div>
               )) : <p className="no-data">No check-outs today</p>}
             </div>

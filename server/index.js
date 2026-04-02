@@ -136,7 +136,7 @@ app.get('/api/dashboard', (req, res) => {
       
       // Check-in list for today
       const checkInList = query(`
-        SELECT b.id, b.customer_name, b.phone, r.room_number, b.check_in, b.guests
+        SELECT b.id, b.customer_name, b.phone, r.room_number, b.check_in, b.guests, b.status
         FROM bookings b
         LEFT JOIN rooms r ON b.room_id = r.id
         WHERE DATE(b.check_in) = ?
@@ -145,7 +145,7 @@ app.get('/api/dashboard', (req, res) => {
       
       // Check-out list for today
       const checkOutList = query(`
-        SELECT b.id, b.customer_name, b.phone, r.room_number, b.check_out, b.guests
+        SELECT b.id, b.customer_name, b.phone, r.room_number, b.check_out, b.guests, b.status
         FROM bookings b
         LEFT JOIN rooms r ON b.room_id = r.id
         WHERE DATE(b.check_out) = ?
@@ -278,6 +278,44 @@ app.put('/api/bookings/:id', (req, res) => {
   } catch (err) {
     console.error('Update booking error:', err);
     res.status(500).json({ message: 'Error updating booking' });
+  }
+});
+
+// Check-in endpoint
+app.put('/api/bookings/:id/check-in', (req, res) => {
+  try {
+    const { id } = req.params;
+
+    execute('UPDATE bookings SET status = ? WHERE id = ?', ['checked_in', id]);
+    const booking = queryOne('SELECT b.*, r.room_number FROM bookings b LEFT JOIN rooms r ON b.room_id = r.id WHERE b.id = ?', [id]);
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    res.json(booking);
+  } catch (err) {
+    console.error('Check-in error:', err);
+    res.status(500).json({ message: 'Error checking in booking' });
+  }
+});
+
+// Check-out endpoint
+app.put('/api/bookings/:id/check-out', (req, res) => {
+  try {
+    const { id } = req.params;
+
+    execute('UPDATE bookings SET status = ? WHERE id = ?', ['checked_out', id]);
+    const booking = queryOne('SELECT b.*, r.room_number FROM bookings b LEFT JOIN rooms r ON b.room_id = r.id WHERE b.id = ?', [id]);
+
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
+    }
+
+    res.json(booking);
+  } catch (err) {
+    console.error('Check-out error:', err);
+    res.status(500).json({ message: 'Error checking out booking' });
   }
 });
 
