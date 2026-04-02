@@ -106,30 +106,30 @@ app.get('/api/dashboard', (req, res) => {
       // Check-outs today: bookings where check_out date = today
       const todayCheckOuts = queryOne(`SELECT COUNT(*) as count FROM bookings WHERE DATE(check_out) = ?`, [today]);
       
-      // Occupied rooms today: bookings where check_in <= today AND check_out > today
+      // Occupied rooms today: bookings that are checked in (regardless of check_in/out dates, but logically should have booking dates covering today)
       const occupiedRoomsCount = queryOne(`
         SELECT COUNT(DISTINCT room_id) as count FROM bookings 
-        WHERE DATE(check_in) <= ? AND DATE(check_out) > ?
+        WHERE status = 'checked_in' AND DATE(check_in) <= ? AND DATE(check_out) > ?
       `, [today, today]);
       
       // Total and available rooms
       const totalRooms = queryOne(`SELECT COUNT(*) as count FROM rooms`);
       const availableRooms = (totalRooms.count - occupiedRoomsCount.count) || 0;
       
-      // Get occupied room numbers
+      // Get occupied room numbers (only rooms that are checked in)
       const occupiedRoomNumbers = query(`
         SELECT DISTINCT r.room_number FROM rooms r
         INNER JOIN bookings b ON r.id = b.room_id
-        WHERE DATE(b.check_in) <= ? AND DATE(b.check_out) > ?
+        WHERE b.status = 'checked_in' AND DATE(b.check_in) <= ? AND DATE(b.check_out) > ?
         ORDER BY r.room_number ASC
       `, [today, today]);
       
-      // Get available room numbers
+      // Get available room numbers (rooms not occupied by checked-in guests)
       const availableRoomNumbers = query(`
         SELECT room_number FROM rooms
         WHERE id NOT IN (
           SELECT DISTINCT room_id FROM bookings 
-          WHERE DATE(check_in) <= ? AND DATE(check_out) > ?
+          WHERE status = 'checked_in' AND DATE(check_in) <= ? AND DATE(check_out) > ?
         )
         ORDER BY room_number ASC
       `, [today, today]);
