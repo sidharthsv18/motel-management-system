@@ -194,6 +194,76 @@ app.get('/api/dashboard', (req, res) => {
   }
 });
 
+// ========== DASHBOARD WEEKLY STATISTICS ==========
+app.get('/api/dashboard/weekly', (req, res) => {
+  try {
+    if (isConnected()) {
+      // Get dates for the past 7 days
+      const dates = [];
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        dates.push({
+          date: d.toISOString().split('T')[0],
+          day: days[d.getDay()]
+        });
+      }
+
+      const weeklyData = dates.map(({ date, day }) => {
+        // Get revenue for the day
+        const dailyRevenue = queryOne(
+          `SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(payment_date) = ?`,
+          [date]
+        );
+
+        // Get check-ins for the day
+        const dailyCheckIns = queryOne(
+          `SELECT COUNT(*) as count FROM bookings WHERE DATE(check_in) = ?`,
+          [date]
+        );
+
+        // Get check-outs for the day
+        const dailyCheckOuts = queryOne(
+          `SELECT COUNT(*) as count FROM bookings WHERE DATE(check_out) = ?`,
+          [date]
+        );
+
+        // Get expenses for the day
+        const dailyExpenses = queryOne(
+          `SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE DATE(expense_date) = ?`,
+          [date]
+        );
+
+        return {
+          day,
+          date,
+          revenue: dailyRevenue.total || 0,
+          checkIns: dailyCheckIns.count || 0,
+          checkOuts: dailyCheckOuts.count || 0,
+          expenses: dailyExpenses.total || 0
+        };
+      });
+
+      res.json(weeklyData);
+    } else {
+      throw new Error('Database not available');
+    }
+  } catch (err) {
+    console.error('Weekly stats error:', err);
+    res.json(
+      Array(7).fill(null).map((_, i) => ({
+        day: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][(new Date().getDay() - 6 + i + 7) % 7],
+        revenue: 0,
+        checkIns: 0,
+        checkOuts: 0,
+        expenses: 0
+      }))
+    );
+  }
+});
+
 // ========== ROOMS ==========
 app.get('/api/rooms', (req, res) => {
   try {
@@ -323,7 +393,7 @@ app.put('/api/bookings/:id/check-out', (req, res) => {
 app.get('/api/payments', (req, res) => {
   try {
     const payments = query(`
-      SELECT p.*, b.customer_name, b.price, b.phone, b.check_in, b.check_out FROM payments p 
+      SELECT p.*, b.customer_name, b.price, b.phone, b.check_in, b.check_out, b.status as booking_status FROM payments p 
       LEFT JOIN bookings b ON p.booking_id = b.id 
       ORDER BY p.created_at DESC
     `);

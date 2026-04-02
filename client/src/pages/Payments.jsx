@@ -22,6 +22,10 @@ function Payments() {
   useEffect(() => {
     fetchPayments();
     fetchBookings();
+    
+    // Auto-refresh every 10 seconds
+    const interval = setInterval(fetchPayments, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   // Clear error and success when add modal opens
@@ -166,6 +170,10 @@ function Payments() {
 
       // Update bookings list with new status
       setBookings(bookings.map(b => b.id === bookingId ? response.data : b));
+      
+      // Refresh payments to show updated booking status
+      await fetchPayments();
+      
       setSuccess('Guest checked out successfully!');
     } catch (err) {
       console.error('Error checking out:', err);
@@ -210,12 +218,13 @@ function Payments() {
                     <td>{p.payment_method}</td>
                     <td>{p.status}</td>
                     <td>
-                      {p.status === 'checked_out' && <span style={{color: '#27ae60', fontWeight: 'bold'}}>✓ Checked Out</span>}
-                      {p.status === 'checked_in' && <span style={{color: '#f39c12'}}>Checked In</span>}
-                      {p.status === 'pending' && <span style={{color: '#95a5a6'}}>Pending</span>}
+                      {p.booking_status === 'checked_out' && <span style={{color: '#27ae60', fontWeight: 'bold'}}>✓ Checked Out</span>}
+                      {p.booking_status === 'checked_in' && <span style={{color: '#f39c12'}}>Checked In</span>}
+                      {p.booking_status === 'pending' && <span style={{color: '#95a5a6'}}>Pending</span>}
+                      {!p.booking_status && <span style={{color: '#95a5a6'}}>—</span>}
                     </td>
                     <td>
-                      {p.status !== 'checked_out' && (
+                      {p.booking_status !== 'checked_out' && (
                         <button 
                           className="btn" 
                           onClick={() => handleCheckOut(p.booking_id)}
@@ -224,7 +233,7 @@ function Payments() {
                           Check-Out
                         </button>
                       )}
-                      {p.status === 'checked_out' && (
+                      {p.booking_status === 'checked_out' && (
                         <span style={{color: '#27ae60', fontWeight: 'bold'}}>✓</span>
                       )}
                     </td>

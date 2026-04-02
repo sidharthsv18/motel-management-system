@@ -18,6 +18,7 @@ function Dashboard() {
     occupiedRoomNumbers: [],
     availableRoomNumbers: []
   });
+  const [weeklyData, setWeeklyData] = useState([]);
 
   // Fetch dashboard data
   const fetchData = async () => {
@@ -27,6 +28,12 @@ function Dashboard() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setData(response.data);
+
+      // Fetch weekly statistics
+      const weeklyResponse = await axios.get('/api/dashboard/weekly', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setWeeklyData(weeklyResponse.data);
     } catch (error) {
       console.error('Failed to fetch dashboard data:', error);
     }
@@ -41,26 +48,19 @@ function Dashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // Mock chart data
-  const revenueData = [
-    { day: 'Mon', revenue: 4200 },
-    { day: 'Tue', revenue: 3800 },
-    { day: 'Wed', revenue: 5100 },
-    { day: 'Thu', revenue: 4600 },
-    { day: 'Fri', revenue: 5800 },
-    { day: 'Sat', revenue: 6200 },
-    { day: 'Sun', revenue: 5500 }
-  ];
 
-  const checkInOutData = [
-    { day: 'Mon', checkIns: 3, checkOuts: 2 },
-    { day: 'Tue', checkIns: 2, checkOuts: 3 },
-    { day: 'Wed', checkIns: 4, checkOuts: 1 },
-    { day: 'Thu', checkIns: 3, checkOuts: 2 },
-    { day: 'Fri', checkIns: 5, checkOuts: 3 },
-    { day: 'Sat', checkIns: 6, checkOuts: 4 },
-    { day: 'Sun', checkIns: 4, checkOuts: 5 }
-  ];
+  // Transform weekly data for Revenue Trend Chart
+  const revenueData = weeklyData.map(item => ({
+    day: item.day,
+    revenue: item.revenue
+  }));
+
+  // Transform weekly data for Check-ins vs Check-outs Chart
+  const checkInOutData = weeklyData.map(item => ({
+    day: item.day,
+    checkIns: item.checkIns,
+    checkOuts: item.checkOuts
+  }));
 
   const roomData = [
     { name: 'Occupied', value: data.occupiedRooms, color: '#3498db' },
