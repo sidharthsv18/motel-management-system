@@ -20,24 +20,26 @@ function Dashboard() {
   });
 
   // Fetch dashboard data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem('token');
-        const response = await axios.get('/api/dashboard', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setData(response.data);
-      } catch (error) {
-        console.error('Failed to fetch dashboard data:', error);
-      }
-    };
+  const fetchData = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('/api/dashboard', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setData(response.data);
+    } catch (error) {
+      console.error('Failed to fetch dashboard data:', error);
+    }
+  };
 
+  useEffect(() => {
+    // Fetch immediately on mount
     fetchData();
-    // Refresh every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    
+    // Refresh every 10 seconds for real-time updates
+    const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
-  }, [selectedDate]);
+  }, []);
 
   // Mock chart data
   const revenueData = [
@@ -61,8 +63,8 @@ function Dashboard() {
   ];
 
   const roomData = [
-    { name: 'Occupied', value: 3, color: '#3498db' },
-    { name: 'Available', value: 13, color: '#2ecc71' }
+    { name: 'Occupied', value: data.occupiedRooms, color: '#3498db' },
+    { name: 'Available', value: data.availableRooms, color: '#2ecc71' }
   ];
 
   return (
@@ -81,6 +83,21 @@ function Dashboard() {
                 onChange={(e) => setSelectedDate(e.target.value)}
                 className="date-input"
               />
+              <button 
+                onClick={fetchData}
+                style={{
+                  marginLeft: '10px',
+                  padding: '8px 16px',
+                  backgroundColor: '#3498db',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer',
+                  fontSize: '14px'
+                }}
+              >
+                🔄 Refresh
+              </button>
             </div>
           </div>
           <div className="kpi-grid">
