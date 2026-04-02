@@ -98,24 +98,76 @@ app.post('/api/auth/login', (req, res) => {
 app.get('/api/dashboard', (req, res) => {
   try {
     if (isConnected()) {
-      const todayBookings = queryOne(`SELECT COUNT(*) as count FROM bookings WHERE DATE(check_in) = DATE('now')`);
-      const totalRooms = queryOne(`SELECT COUNT(*) as count FROM rooms`);
-      const occupiedRooms = queryOne(`SELECT COUNT(*) as count FROM rooms WHERE status = 'occupied'`);
-      const availableRooms = (totalRooms.count - occupiedRooms.count) || 0;
-      const availableRoomNumbers = query(`SELECT room_number FROM rooms WHERE status = 'available' ORDER BY room_number ASC`);
+      const today = new Date().toISOString().split('T')[0];
       
-      const todayRevenue = queryOne(`SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(payment_date) = DATE('now')`);
-      const todayExpenses = queryOne(`SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE DATE(expense_date) = DATE('now')`);
+      // Check-ins today: bookings where check_in date = today
+      const todayCheckIns = queryOne(`SELECT COUNT(*) as count FROM bookings WHERE DATE(check_in) = ?`, [today]);
+      
+      // Check-outs today: bookings where check_out date = today
+      const todayCheckOuts = queryOne(`SELECT COUNT(*) as count FROM bookings WHERE DATE(check_out) = ?`, [today]);
+      
+      // Occupied rooms today: bookings where check_in <= today AND check_out > today
+      const occupiedRoomsCount = queryOne(`
+        SELECT COUNT(DISTINCT room_id) as count FROM bookings 
+        WHERE DATE(check_in) <= ? AND DATE(check_out) > ?
+      `, [today, today]);
+      
+      // Total and available rooms
+      const totalRooms = queryOne(`SELECT COUNT(*) as count FROM rooms`);
+      const availableRooms = (totalRooms.count - occupiedRoomsCount.count) || 0;
+      
+      // Get occupied room numbers
+      const occupiedRoomNumbers = query(`
+        SELECT DISTINCT r.room_number FROM rooms r
+        INNER JOIN bookings b ON r.id = b.room_id
+        WHERE DATE(b.check_in) <= ? AND DATE(b.check_out) > ?
+        ORDER BY r.room_number ASC
+      `, [today, today]);
+      
+      // Get available room numbers
+      const availableRoomNumbers = query(`
+        SELECT room_number FROM rooms
+        WHERE id NOT IN (
+          SELECT DISTINCT room_id FROM bookings 
+          WHERE DATE(check_in) <= ? AND DATE(check_out) > ?
+        )
+        ORDER BY room_number ASC
+      `, [today, today]);
+      
+      // Check-in list for today
+      const checkInList = query(`
+        SELECT b.id, b.customer_name, b.phone, r.room_number, b.check_in, b.guests
+        FROM bookings b
+        LEFT JOIN rooms r ON b.room_id = r.id
+        WHERE DATE(b.check_in) = ?
+        ORDER BY b.check_in ASC
+      `, [today]);
+      
+      // Check-out list for today
+      const checkOutList = query(`
+        SELECT b.id, b.customer_name, b.phone, r.room_number, b.check_out, b.guests
+        FROM bookings b
+        LEFT JOIN rooms r ON b.room_id = r.id
+        WHERE DATE(b.check_out) = ?
+        ORDER BY b.check_out ASC
+      `, [today]);
+      
+      // Revenue and expenses for today
+      const todayRevenue = queryOne(`SELECT COALESCE(SUM(amount), 0) as total FROM payments WHERE DATE(payment_date) = ?`, [today]);
+      const todayExpenses = queryOne(`SELECT COALESCE(SUM(amount), 0) as total FROM expenses WHERE DATE(expense_date) = ?`, [today]);
 
       const revenue = todayRevenue.total || 0;
       const expenses = todayExpenses.total || 0;
 
       res.json({
-        todayCheckIns: todayBookings.count,
-        todayCheckOuts: 0,
+        todayCheckIns: todayCheckIns.count,
+        todayCheckOuts: todayCheckOuts.count,
         availableRooms: availableRooms,
         availableRoomNumbers: availableRoomNumbers.map(r => r.room_number),
-        occupiedRooms: occupiedRooms.count,
+        occupiedRooms: occupiedRoomsCount.count,
+        occupiedRoomNumbers: occupiedRoomNumbers.map(r => r.room_number),
+        checkInList: checkInList,
+        checkOutList: checkOutList,
         todayRevenue: revenue,
         todayExpenses: expenses,
         todayProfit: (revenue - expenses).toFixed(2)
@@ -131,6 +183,9 @@ app.get('/api/dashboard', (req, res) => {
       availableRooms: 0,
       availableRoomNumbers: [],
       occupiedRooms: 0,
+      occupiedRoomNumbers: [],
+      checkInList: [],
+      checkOutList: [],
       todayRevenue: 0,
       todayExpenses: 0,
       todayProfit: 0,

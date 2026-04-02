@@ -12,7 +12,11 @@ function Dashboard() {
     occupiedRooms: 0,
     todayRevenue: 0,
     todayExpenses: 0,
-    todayProfit: 0
+    todayProfit: 0,
+    checkInList: [],
+    checkOutList: [],
+    occupiedRoomNumbers: [],
+    availableRoomNumbers: []
   });
 
   // Fetch dashboard data
@@ -30,20 +34,10 @@ function Dashboard() {
     };
 
     fetchData();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
   }, [selectedDate]);
-
-  // Mock check-in/out lists
-  const getListsForDate = (date) => ({
-    checkIns: date === new Date().toISOString().split('T')[0] ? [
-      { name: 'John Doe', room: 101, time: '10:00 AM' },
-      { name: 'Jane Smith', room: 102, time: '11:30 AM' }
-    ] : [],
-    checkOuts: date === new Date().toISOString().split('T')[0] ? [
-      { name: 'Bob Johnson', room: 103, time: '2:00 PM' }
-    ] : []
-  });
-
-  const lists = getListsForDate(selectedDate);
 
   // Mock chart data
   const revenueData = [
@@ -110,6 +104,11 @@ function Dashboard() {
             <div className="card">
               <h3>Occupied Rooms</h3>
               <p>{data.occupiedRooms}</p>
+              {data.occupiedRoomNumbers && data.occupiedRoomNumbers.length > 0 && (
+                <p style={{fontSize: '12px', color: '#d9534f', marginTop: '8px'}}>
+                  Rooms: {data.occupiedRoomNumbers.join(', ')}
+                </p>
+              )}
             </div>
             <div className="card">
               <h3>Revenue</h3>
@@ -182,22 +181,22 @@ function Dashboard() {
           </div>
           <div className="lists-grid">
             <div className="list-card">
-              <h3>Check-ins</h3>
-              {lists.checkIns.length > 0 ? lists.checkIns.map((checkIn, index) => (
+              <h3>Check-ins Today</h3>
+              {data.checkInList && data.checkInList.length > 0 ? data.checkInList.map((checkIn, index) => (
                 <div key={index} className="list-item">
-                  <span>{checkIn.name} - Room {checkIn.room}</span>
-                  <span>{checkIn.time}</span>
+                  <span>{checkIn.customer_name}</span>
+                  <span>Room {checkIn.room_number} • {checkIn.guests} guest{checkIn.guests > 1 ? 's' : ''}</span>
                 </div>
-              )) : <p className="no-data">No check-ins for selected date</p>}
+              )) : <p className="no-data">No check-ins today</p>}
             </div>
             <div className="list-card">
-              <h3>Check-outs</h3>
-              {lists.checkOuts.length > 0 ? lists.checkOuts.map((checkOut, index) => (
+              <h3>Check-outs Today</h3>
+              {data.checkOutList && data.checkOutList.length > 0 ? data.checkOutList.map((checkOut, index) => (
                 <div key={index} className="list-item">
-                  <span>{checkOut.name} - Room {checkOut.room}</span>
-                  <span>{checkOut.time}</span>
+                  <span>{checkOut.customer_name}</span>
+                  <span>Room {checkOut.room_number} • {checkOut.guests} guest{checkOut.guests > 1 ? 's' : ''}</span>
                 </div>
-              )) : <p className="no-data">No check-outs for selected date</p>}
+              )) : <p className="no-data">No check-outs today</p>}
             </div>
           </div>
         </div>
