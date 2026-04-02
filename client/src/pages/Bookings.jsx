@@ -218,7 +218,7 @@ function Bookings() {
                     <td>{b.phone}</td>
                     <td>{b.check_in}</td>
                     <td>{b.check_out}</td>
-                    <td>{b.room_id}</td>
+                    <td>{b.room_number}</td>
                     <td>{b.guests}</td>
                     <td>₹{parseFloat(b.price).toFixed(2)}</td>
                     <td>

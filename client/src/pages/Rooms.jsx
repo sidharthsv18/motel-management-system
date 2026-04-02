@@ -19,6 +19,9 @@ function Rooms() {
 
   useEffect(() => {
     fetchRooms();
+    // Refresh every 10 seconds to sync with checked-in status
+    const interval = setInterval(fetchRooms, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   // Clear error and success when add modal opens
@@ -59,7 +62,20 @@ function Rooms() {
       const response = await axios.get('/api/rooms', {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setRooms(response.data || []);
+      
+      // Get dashboard data to sync room availability with checked-in status
+      const dashboardResponse = await axios.get('/api/dashboard', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      // Update room status based on checked-in rooms
+      const occupiedRoomNumbers = dashboardResponse.data.occupiedRoomNumbers || [];
+      const updatedRooms = response.data.map(room => ({
+        ...room,
+        status: occupiedRoomNumbers.includes(room.room_number.toString()) ? 'occupied' : 'available'
+      }));
+      
+      setRooms(updatedRooms);
       setError('');
     } catch (err) {
       console.error('Error fetching rooms:', err);
@@ -154,7 +170,9 @@ function Rooms() {
             {rooms.map(r => (
               <div key={r.id} className={`room-card ${getStatusClass(r.status)}`}>
                 <h3>Room {r.room_number}</h3>
-                <p>{r.status}</p>
+                <p style={{fontWeight: 'bold', color: r.status === 'occupied' ? '#e74c3c' : '#27ae60'}}>
+                  {r.status === 'occupied' ? '🔴 Occupied' : '🟢 Available'}
+                </p>
                 <p>₹{r.price_per_night}/night</p>
                 {userRole === 'owner' && (
                   <button 
