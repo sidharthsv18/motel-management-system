@@ -1,98 +1,156 @@
 /* ===============================================
-   MOBILE RESPONSIVE LAYOUT STYLES
-   =============== mobileOpen */
+   MOBILE RESPONSIVE LAYOUT - Keep same layout as desktop
+   =============================================== */
 
-/* Mobile header with hamburger menu */
+/* Hide mobile header by default */
 .mobile-header {
-  display: none;
-  padding: 10px 15px;
-  background: white;
-  border-bottom: 1px solid #e0e0e0;
-  align-items: center;
-  justify-content: space-between;
-  z-index: 500;
+  display: none !important;
 }
 
 .sidebar-close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: white;
-  padding: 5px;
+  display: none !important;
 }
 
 /* ===============================================
-   TABLET AND MOBILE (max-width: 768px)
+   TABLET AND SMALL DEVICES (max-width: 1024px)
+   =============================================== */
+
+@media (max-width: 1024px) {
+  .sidebar {
+    width: 180px;
+    padding: 15px;
+  }
+
+  .sidebar h2 {
+    font-size: 1rem;
+  }
+
+  .sidebar button {
+    padding: 10px 12px;
+    font-size: 0.9rem;
+  }
+
+  .dashboard-container {
+    padding: 16px;
+  }
+}
+
+/* ===============================================
+   MOBILE DEVICES (max-width: 768px)
    =============================================== */
 
 @media (max-width: 768px) {
-  /* Show mobile header with hamburger button */
-  .mobile-header {
+  /* Keep the same layout - don't change to column */
+  .flex {
     display: flex;
-  }
-
-  /* App container adapts for mobile */
-  .app-container,
-  div[style*="display: flex;"] {
-    flex-direction: column;
-    height: auto;
+    flex-direction: row;
     min-height: 100vh;
   }
 
-  /* Sidebar becomes a slide-out drawer */
+  /* Sidebar becomes narrower but stays visible */
   .sidebar {
-    position: fixed !important;
-    top: 0 !important;
-    left: -75vw !important;
-    width: 75vw !important;
-    max-width: 280px !important;
-    height: 100vh !important;
-    z-index: 1000 !important;
-    box-shadow: 2px 0 15px rgba(0, 0, 0, 0.2) !important;
-    overflow-y: auto !important;
-    transition: left 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) !important;
-  }
-
-  /* Sidebar visible state */
-  .sidebar.mobile-open {
-    left: 0 !important;
-  }
-
-  /* Close button visible on mobile */
-  .sidebar-close-btn {
-    display: block !important;
-    position: absolute;
-    top: 15px;
-    right: 15px;
-    z-index: 1001;
-  }
-
-  /* Main content takes full width */
-  div[style*="flex: 1"] {
-    width: 100% !important;
+    width: 80px !important;
     padding: 10px !important;
+    height: 100vh;
+    flex-shrink: 0;
   }
 
-  /* Prevent body scroll when sidebar is open */
-  body.sidebar-open {
-    overflow: hidden;
+  .sidebar-header {
+    margin-bottom: 10px;
   }
 
-  /* Overlay when sidebar is open */
-  .sidebar-overlay {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    z-index: 999;
+  .sidebar h2 {
+    display: none !important; /* Hide title on mobile */
   }
 
-  .sidebar.mobile-open ~ .sidebar-overlay {
-    display: block;
+  .user-info {
+    display: none !important; /* Hide user info */
+  }
+
+  .sidebar button {
+    padding: 8px !important;
+    font-size: 20px !important;
+    text-align: center;
+    color: white;
+    background: none !important;
+    border: none !important;
+    width: 100% !important;
+  }
+
+  .sidebar button:hover {
+    background: rgba(255,255,255,0.1) !important;
+  }
+
+  .logout-btn {
+    font-size: 12px !important;
+    padding: 6px !important;
+    margin-top: auto;
+  }
+
+  /* Main content takes available space */
+  .main-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0;
+  }
+
+  .dashboard-container {
+    max-width: 100%;
+    padding: 12px;
+  }
+
+  .page-title,
+  .dashboard-title {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .date-picker {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    padding: 15px;
+    margin-bottom: 10px;
+  }
+
+  .card h3 {
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+  }
+
+  .card p {
+    font-size: 1.2rem;
+  }
+
+  .charts-grid {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+
+  .chart-card {
+    padding: 15px;
+  }
+
+  /* Tables on mobile */
+  table {
+    font-size: 0.8rem;
+  }
+
+  .table-wrapper {
+    overflow-x: auto;
   }
 }
 
@@ -102,15 +160,38 @@
 
 @media (max-width: 480px) {
   .sidebar {
-    width: 85vw !important;
-    max-width: 100% !important;
+    width: 70px !important;
   }
 
-  .mobile-header {
-    padding: 8px 12px;
+  .sidebar button {
+    font-size: 18px !important;
+    padding: 6px !important;
   }
 
-  .sidebar-close-btn {
-    font-size: 20px;
+  .logout-btn {
+    font-size: 10px !important;
+    padding: 4px !important;
+  }
+
+  .kpi-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .card {
+    padding: 12px;
+    margin-bottom: 8px;
+  }
+
+  .dashboard-container {
+    padding: 8px;
+  }
+
+  .flex {
+    min-height: 100vh;
+  }
+
+  table {
+    font-size: 0.75rem;
   }
 }
