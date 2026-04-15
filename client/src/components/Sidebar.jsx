@@ -34,13 +34,13 @@ function Sidebar({ mobileOpen = false, setMobileOpen = () => {} }) {
       </div>
 
       <ul>
-        <li><button className={isActive('/dashboard') ? 'active' : ''} onClick={() => navigate('/dashboard')}>Dashboard</button></li>
-        <li><button className={isActive('/bookings') ? 'active' : ''} onClick={() => navigate('/bookings')}>Bookings</button></li>
-        <li><button className={isActive('/rooms') ? 'active' : ''} onClick={() => navigate('/rooms')}>Rooms</button></li>
-        <li><button className={isActive('/payments') ? 'active' : ''} onClick={() => navigate('/payments')}>Payments</button></li>
-        <li><button className={isActive('/expenses') ? 'active' : ''} onClick={() => navigate('/expenses')}>Expenses</button></li>
+        <li><button className={isActive('/dashboard') ? 'active' : ''} onClick={() => navigate('/dashboard')}><span className="emoji">📊</span><span className="text">Dashboard</span></button></li>
+        <li><button className={isActive('/bookings') ? 'active' : ''} onClick={() => navigate('/bookings')}><span className="emoji">📅</span><span className="text">Bookings</span></button></li>
+        <li><button className={isActive('/rooms') ? 'active' : ''} onClick={() => navigate('/rooms')}><span className="emoji">🛏️</span><span className="text">Rooms</span></button></li>
+        <li><button className={isActive('/payments') ? 'active' : ''} onClick={() => navigate('/payments')}><span className="emoji">💰</span><span className="text">Payments</span></button></li>
+        <li><button className={isActive('/expenses') ? 'active' : ''} onClick={() => navigate('/expenses')}><span className="emoji">💸</span><span className="text">Expenses</span></button></li>
         {userRole === 'owner' && (
-          <li><button className={isActive('/audit') ? 'active' : ''} onClick={() => navigate('/audit')}>Audit Logs</button></li>
+          <li><button className={isActive('/audit') ? 'active' : ''} onClick={() => navigate('/audit')}><span className="emoji">📋</span><span className="text">Audit Logs</span></button></li>
         )}
       </ul>
 

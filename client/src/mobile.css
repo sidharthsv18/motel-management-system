@@ -11,6 +11,15 @@
   display: none !important;
 }
 
+/* Desktop view - show both emoji and text */
+.sidebar button .emoji {
+  margin-right: 8px;
+}
+
+.sidebar button .text {
+  display: inline;
+}
+
 /* ===============================================
    TABLET AND SMALL DEVICES (max-width: 1024px)
    =============================================== */
@@ -47,12 +56,14 @@
     min-height: 100vh;
   }
 
-  /* Sidebar becomes narrower but stays visible */
+  /* Sidebar stays at proper width */
   .sidebar {
-    width: 80px !important;
-    padding: 10px !important;
+    width: 100px !important;
+    padding: 8px !important;
     height: 100vh;
     flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   .sidebar-header {
@@ -60,31 +71,72 @@
   }
 
   .sidebar h2 {
-    display: none !important; /* Hide title on mobile */
+    display: none !important;
   }
 
   .user-info {
-    display: none !important; /* Hide user info */
+    display: none !important;
+  }
+
+  .sidebar ul {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
   }
 
   .sidebar button {
-    padding: 8px !important;
-    font-size: 20px !important;
+    padding: 10px 8px !important;
+    font-size: 14px !important;
     text-align: center;
     color: white;
     background: none !important;
     border: none !important;
     width: 100% !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    white-space: normal;
+    word-break: break-word;
+  }
+
+  /* Show emoji, hide text on mobile */
+  .sidebar button .emoji {
+    font-size: 24px;
+    margin-right: 0 !important;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .sidebar button .text {
+    display: none !important;
+    font-size: 0;
   }
 
   .sidebar button:hover {
     background: rgba(255,255,255,0.1) !important;
+    border-radius: 6px;
+  }
+
+  .sidebar button.active {
+    background: rgba(255,255,255,0.2) !important;
   }
 
   .logout-btn {
-    font-size: 12px !important;
-    padding: 6px !important;
+    font-size: 18px !important;
+    padding: 10px !important;
     margin-top: auto;
+  }
+
+  .logout-btn .emoji {
+    display: block !important;
+    margin-right: 0 !important;
+  }
+
+  .logout-btn .text {
+    display: none !important;
   }
 
   /* Main content takes available space */
@@ -160,17 +212,22 @@
 
 @media (max-width: 480px) {
   .sidebar {
-    width: 70px !important;
+    width: 80px !important;
   }
 
   .sidebar button {
-    font-size: 18px !important;
-    padding: 6px !important;
+    padding: 8px !important;
+    font-size: 12px !important;
+  }
+
+  .sidebar button .emoji {
+    font-size: 20px;
+    margin-bottom: 2px;
   }
 
   .logout-btn {
-    font-size: 10px !important;
-    padding: 4px !important;
+    font-size: 16px !important;
+    padding: 8px !important;
   }
 
   .kpi-grid {
