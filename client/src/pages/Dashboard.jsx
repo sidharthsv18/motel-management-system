@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Sidebar from '../components/Sidebar';
+import MobileHeader from '../components/MobileHeader';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 function Dashboard() {
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [data, setData] = useState({
     todayCheckIns: 0,
@@ -69,7 +71,8 @@ function Dashboard() {
 
   return (
     <div className="flex">
-      <Sidebar />
+      <MobileHeader onMenuClick={() => setMobileOpen(!mobileOpen)} isLoggedIn={true} />
+      <Sidebar mobileOpen={mobileOpen} setMobileOpen={setMobileOpen} />
       <div className="main-content">
         <div className="dashboard-container">
           <div className="dashboard-header">

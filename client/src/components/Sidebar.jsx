@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from 'react-router-dom';
 
-function Sidebar() {
+function Sidebar({ mobileOpen = false, setMobileOpen = () => {} }) {
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -17,7 +17,14 @@ function Sidebar() {
   };
 
   return (
-    <div className="sidebar">
+    <div className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`} style={mobileOpen ? { transform: 'translateX(0)' } : {}}>
+      <button 
+        className="sidebar-close-btn"
+        onClick={() => setMobileOpen(false)}
+        style={{ display: 'none' }}
+      >
+        ✕
+      </button>
       <div className="sidebar-header">
         <h2>Motel Management</h2>
         <div className="user-info">

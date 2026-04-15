@@ -1,9 +1,11 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
+import MobileHeader from './components/MobileHeader';
 import Dashboard from './pages/Dashboard';
 import Bookings from './pages/Bookings';
 import Rooms from './pages/Rooms';
 import Payments from './pages/Payments';
+import './mobile.css';
 import Expenses from './pages/Expenses';
 import Audit from './pages/Audit';
 
