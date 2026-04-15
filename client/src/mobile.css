@@ -56,9 +56,9 @@
     min-height: 100vh;
   }
 
-  /* Sidebar stays at proper width */
+  /* Sidebar with room for labels */
   .sidebar {
-    width: 100px !important;
+    width: 130px !important;
     padding: 8px !important;
     height: 100vh;
     flex-shrink: 0;
@@ -86,8 +86,8 @@
   }
 
   .sidebar button {
-    padding: 10px 8px !important;
-    font-size: 14px !important;
+    padding: 8px 6px !important;
+    font-size: 12px !important;
     text-align: center;
     color: white;
     background: none !important;
@@ -97,22 +97,24 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0;
+    gap: 4px;
     white-space: normal;
     word-break: break-word;
+    line-height: 1.2;
   }
 
-  /* Show emoji, hide text on mobile */
+  /* Show both emoji and text on mobile */
   .sidebar button .emoji {
-    font-size: 24px;
+    font-size: 20px;
     margin-right: 0 !important;
-    margin-bottom: 4px;
+    margin-bottom: 0;
     display: block;
   }
 
   .sidebar button .text {
-    display: none !important;
-    font-size: 0;
+    display: block !important;
+    font-size: 10px;
+    font-weight: 500;
   }
 
   .sidebar button:hover {
@@ -125,18 +127,20 @@
   }
 
   .logout-btn {
-    font-size: 18px !important;
-    padding: 10px !important;
+    font-size: 12px !important;
+    padding: 8px !important;
     margin-top: auto;
   }
 
   .logout-btn .emoji {
     display: block !important;
     margin-right: 0 !important;
+    font-size: 18px;
   }
 
   .logout-btn .text {
-    display: none !important;
+    display: block !important;
+    font-size: 10px;
   }
 
   /* Main content takes available space */
@@ -212,22 +216,36 @@
 
 @media (max-width: 480px) {
   .sidebar {
-    width: 80px !important;
+    width: 110px !important;
   }
 
   .sidebar button {
-    padding: 8px !important;
-    font-size: 12px !important;
+    padding: 6px 4px !important;
+    font-size: 10px !important;
   }
 
   .sidebar button .emoji {
-    font-size: 20px;
+    font-size: 18px;
     margin-bottom: 2px;
   }
 
+  .sidebar button .text {
+    display: block !important;
+    font-size: 8px;
+  }
+
   .logout-btn {
-    font-size: 16px !important;
-    padding: 8px !important;
+    font-size: 10px !important;
+    padding: 6px !important;
+  }
+
+  .logout-btn .emoji {
+    font-size: 16px;
+  }
+
+  .logout-btn .text {
+    display: block !important;
+    font-size: 8px;
   }
 
   .kpi-grid {
