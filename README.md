@@ -48,7 +48,58 @@ For detailed setup, database configuration, and deployment instructions, see [SE
 | **Styling** | CSS (responsive design) |
 | **Charts** | Recharts |
 
-## 📋 Available Scripts
+## � Security - Environment Variables
+
+### Setup Credentials Securely
+
+**Never hardcode sensitive information!** This project uses environment variables for secure credential management.
+
+### Step 1: Create `.env` File
+```bash
+# In the project root directory, copy .env.example to .env
+cp .env.example .env
+
+# Or on Windows:
+copy .env.example .env
+```
+
+### Step 2: Edit `.env` with Your Credentials
+```
+PORT=5000
+JWT_SECRET=your-super-secret-jwt-key-here
+
+# Owner Account
+OWNER_EMAIL=owner@elitegrand.com
+OWNER_PASSWORD=Elitegrand#1818
+
+# Reception Account  
+RECEPTION_EMAIL=reception@elitegrand.com
+RECEPTION_PASSWORD=Frontdesk#5100
+```
+
+### Step 3: Start the Server
+```bash
+npm start
+# Backend will automatically load credentials from .env
+```
+
+### ⚠️ Important
+- ✅ `.env` is already in `.gitignore` - it won't be committed to Git
+- ✅ `.env.example` is committed (safe) - shows the structure only
+- ✅ Always keep `.env` file LOCAL and SECURE
+- ✅ Never share `.env` contents with anyone
+- ✅ Generate strong passwords for production
+
+### On Production (AWS EC2, etc.)
+```bash
+# SSH into your server and create .env there
+nano .env
+
+# Add your credentials, save, and restart
+npm start
+```
+
+## �📋 Available Scripts
 
 ```bash
 npm start              # Start both frontend & backend

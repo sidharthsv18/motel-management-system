@@ -1,32 +1,36 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
+const dotenv = require('dotenv');
 const { db, query, queryOne, execute, initializeDatabase, isConnected } = require('./database');
+
+// Load environment variables from .env file
+dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-const PORT = 5000;
-const JWT_SECRET = 'motel_secret_2026';
+const PORT = process.env.PORT || 5000;
+const JWT_SECRET = process.env.JWT_SECRET || 'motel_secret_2026';
 
 // Initialize database on startup
 initializeDatabase();
 
-// Users - hardcoded for simplicity
+// Users - loaded from environment variables for security
 const users = {
-  'owner@elitegrand.com': {
+  [process.env.OWNER_EMAIL || 'owner@elitegrand.com']: {
     id: 1,
     name: 'Owner',
-    email: 'owner@elitegrand.com',
-    password: 'Elitegrand#1818',
+    email: process.env.OWNER_EMAIL || 'owner@elitegrand.com',
+    password: process.env.OWNER_PASSWORD || 'Elitegrand#1818',
     role: 'owner'
   },
-  'reception@elitegrand.com': {
+  [process.env.RECEPTION_EMAIL || 'reception@elitegrand.com']: {
     id: 2,
     name: 'Reception',
-    email: 'reception@elitegrand.com',
-    password: 'Frontdesk#5100',
+    email: process.env.RECEPTION_EMAIL || 'reception@elitegrand.com',
+    password: process.env.RECEPTION_PASSWORD || 'Frontdesk#5100',
     role: 'receptionist'
   }
 };
@@ -675,5 +679,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n✅ Server started on port ${PORT}`);
   console.log(`📦 Database: ${isConnected() ? '✅ SQLite Connected' : '❌ Not Available'}`);
-  console.log(`Test: owner@elitegrand.com / Elitegrand#1818\n`);
+  console.log(`Test: ${process.env.OWNER_EMAIL || 'owner@elitegrand.com'} / (password from .env)\n`);
 });
