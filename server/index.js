@@ -1,43 +1,95 @@
 const express = require('express');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');
-const dotenv = require('dotenv');
+const { SecretsManagerClient, GetSecretValueCommand } = require('@aws-sdk/client-secrets-manager');
 const { db, query, queryOne, execute, initializeDatabase, isConnected } = require('./database');
-
-// Load environment variables from .env file
-dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'motel_secret_2026';
+const REGION = process.env.AWS_REGION || 'ap-south-1';
+const SECRET_NAME = process.env.SECRET_NAME || 'motel-management-secrets';
+
+// AWS Secrets Manager client
+const secretsClient = new SecretsManagerClient({ region: REGION });
 
 // Initialize database on startup
 initializeDatabase();
 
-// Users - loaded from environment variables for security
-const users = {
-  [process.env.OWNER_EMAIL || 'owner@elitegrand.com']: {
-    id: 1,
-    name: 'Owner',
-    email: process.env.OWNER_EMAIL || 'owner@elitegrand.com',
-    password: process.env.OWNER_PASSWORD || 'Elitegrand#1818',
-    role: 'owner'
-  },
-  [process.env.RECEPTION_EMAIL || 'reception@elitegrand.com']: {
-    id: 2,
-    name: 'Reception',
-    email: process.env.RECEPTION_EMAIL || 'reception@elitegrand.com',
-    password: process.env.RECEPTION_PASSWORD || 'Frontdesk#5100',
-    role: 'receptionist'
+let users = {}; // Will be populated after loading from Secrets Manager
+
+// Function to load secrets from AWS Secrets Manager
+async function loadSecrets() {
+  try {
+    const command = new GetSecretValueCommand({ SecretId: SECRET_NAME });
+    const response = await secretsClient.send(command);
+    const secrets = JSON.parse(response.SecretString);
+    
+    const JWT_SECRET = secrets.JWT_SECRET || 'motel_secret_2026';
+    const OWNER_EMAIL = secrets.OWNER_EMAIL || 'owner@elitegrand.com';
+    const OWNER_PASSWORD = secrets.OWNER_PASSWORD || 'Elitegrand#1818';
+    const RECEPTION_EMAIL = secrets.RECEPTION_EMAIL || 'reception@elitegrand.com';
+    const RECEPTION_PASSWORD = secrets.RECEPTION_PASSWORD || 'Frontdesk#5100';
+    
+    users = {
+      [OWNER_EMAIL]: {
+        id: 1,
+        name: 'Owner',
+        email: OWNER_EMAIL,
+        password: OWNER_PASSWORD,
+        role: 'owner'
+      },
+      [RECEPTION_EMAIL]: {
+        id: 2,
+        name: 'Reception',
+        email: RECEPTION_EMAIL,
+        password: RECEPTION_PASSWORD,
+        role: 'receptionist'
+      }
+    };
+    
+    // Store JWT_SECRET in app for later use
+    app.locals.JWT_SECRET = JWT_SECRET;
+    app.locals.secretsLoaded = true;
+    
+    console.log('✅ Secrets loaded from AWS Secrets Manager');
+    console.log('📦 Users configured: ' + Object.keys(users).join(', '));
+  } catch (error) {
+    console.error('❌ Failed to load secrets from AWS Secrets Manager:', error.message);
+    console.warn('⚠️  Using fallback credentials (development mode)');
+    
+    // Fallback for development
+    const fallbackJWT = 'motel_secret_2026';
+    users = {
+      'owner@elitegrand.com': {
+        id: 1,
+        name: 'Owner',
+        email: 'owner@elitegrand.com',
+        password: 'Elitegrand#1818',
+        role: 'owner'
+      },
+      'reception@elitegrand.com': {
+        id: 2,
+        name: 'Reception',
+        email: 'reception@elitegrand.com',
+        password: 'Frontdesk#5100',
+        role: 'receptionist'
+      }
+    };
+    app.locals.JWT_SECRET = fallbackJWT;
+    app.locals.secretsLoaded = false;
   }
-};
+}
 
 // ========== MIDDLEWARE ==========
 // Authenticate token from Authorization header
 const authenticateToken = (req, res, next) => {
+  if (!app.locals.secretsLoaded) {
+    return res.status(503).json({ message: 'Service unavailable: Secrets not loaded' });
+  }
+  
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -45,7 +97,7 @@ const authenticateToken = (req, res, next) => {
     return res.status(401).json({ message: 'Access token required' });
   }
 
-  jwt.verify(token, JWT_SECRET, (err, decoded) => {
+  jwt.verify(token, app.locals.JWT_SECRET, (err, decoded) => {
     if (err) {
       return res.status(403).json({ message: 'Invalid or expired token' });
     }
@@ -65,6 +117,10 @@ const requireOwner = (req, res, next) => {
 // ========== LOGIN ==========
 app.post('/api/auth/login', (req, res) => {
   try {
+    if (!app.locals.secretsLoaded) {
+      return res.status(503).json({ message: 'Service unavailable: Secrets not loaded' });
+    }
+    
     const { email, password } = req.body || {};
 
     if (!email || !password) {
@@ -79,7 +135,7 @@ app.post('/api/auth/login', (req, res) => {
 
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
-      JWT_SECRET,
+      app.locals.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
@@ -676,8 +732,20 @@ app.use((err, req, res, next) => {
 });
 
 // ========== START SERVER ==========
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`\n✅ Server started on port ${PORT}`);
-  console.log(`📦 Database: ${isConnected() ? '✅ SQLite Connected' : '❌ Not Available'}`);
-  console.log(`Test: ${process.env.OWNER_EMAIL || 'owner@elitegrand.com'} / (password from .env)\n`);
+async function startServer() {
+  // Load secrets from AWS Secrets Manager first
+  await loadSecrets();
+  
+  // Then start the server
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`\n✅ Server started on port ${PORT}`);
+    console.log(`📦 Database: ${isConnected() ? '✅ SQLite Connected' : '❌ Not Available'}`);
+    console.log(`🔐 Auth: JWT enabled`);
+    console.log(`🔑 Secrets: ${app.locals.secretsLoaded ? '✅ AWS Secrets Manager' : '⚠️  Fallback credentials'}\n`);
+  });
+}
+
+startServer().catch((error) => {
+  console.error('Failed to start server:', error);
+  process.exit(1);
 });
