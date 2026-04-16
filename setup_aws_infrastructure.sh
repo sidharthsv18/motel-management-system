@@ -419,7 +419,7 @@ NEXT STEPS
 
 14. Verify application:
     - Visit https://yourdomain.com
-    - Login with: owner@motel.com / password123
+    - Login with: ashok@elitegrand.com / password123
     - Test all pages and features
 
 ============================================================================

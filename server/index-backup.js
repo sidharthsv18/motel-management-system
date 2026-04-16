@@ -13,8 +13,8 @@ app.use(express.json());
 
 // ========== MOCK DATA ==========
 const mockUsers = {
-  'owner@motel.com': { id: 1, name: 'Owner', role: 'owner', password: 'password123' },
-  'receptionist@motel.com': { id: 2, name: 'Receptionist', role: 'receptionist', password: 'password123' }
+  'ashok@elitegrand.com': { id: 1, name: 'Ashok', role: 'owner', password: 'password123' },
+  'priya@elitegrand.com': { id: 2, name: 'Priya', role: 'receptionist', password: 'password123' }
 };
 
 const mockRooms = [
@@ -40,8 +40,8 @@ let mockPayments = [
 ];
 
 const mockAuditLogs = [
-  { id: 1, user_id: 1, action: 'CREATE', table_name: 'bookings', record_id: 1, user_email: 'owner@motel.com', created_at: new Date() },
-  { id: 2, user_id: 2, action: 'UPDATE', table_name: 'bookings', record_id: 2, user_email: 'receptionist@motel.com', created_at: new Date() },
+  { id: 1, user_id: 1, action: 'CREATE', table_name: 'bookings', record_id: 1, user_email: 'ashok@elitegrand.com', created_at: new Date() },
+  { id: 2, user_id: 2, action: 'UPDATE', table_name: 'bookings', record_id: 2, user_email: 'priya@elitegrand.com', created_at: new Date() },
 ];
 
 // ========== AUTH MIDDLEWARE ==========
@@ -187,5 +187,5 @@ app.use((err, req, res, next) => {
 // ========== START SERVER ==========
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
-  console.log(`📝 Test: owner@motel.com / password123`);
+  console.log(`📝 Test: ashok@elitegrand.com / password123`);
 });

@@ -20,7 +20,7 @@ const MobileHeader = ({ onMenuClick, isLoggedIn }) => {
       >
         ☰
       </button>
-      <h3 style={{ margin: 0, fontSize: '18px', flex: 1 }}>Motel Management</h3>
+      <h3 style={{ margin: 0, fontSize: '18px', flex: 1 }}>Hotel ELITE GRAND</h3>
     </div>
   );
 };

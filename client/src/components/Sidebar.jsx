@@ -26,7 +26,7 @@ function Sidebar({ mobileOpen = false, setMobileOpen = () => {} }) {
         ✕
       </button>
       <div className="sidebar-header">
-        <h2>Motel Management</h2>
+        <h2>Hotel ELITE GRAND</h2>
         <div className="user-info">
           <div className="user-email">{userEmail}</div>
           <div className="user-role">{userRole}</div>

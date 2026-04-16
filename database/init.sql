@@ -87,8 +87,8 @@ CREATE TABLE expenses (
 -- Insert sample users
 -- Passwords are hashed versions of 'password123'
 INSERT INTO users (email, password, role) VALUES
-('receptionist@motel.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'receptionist'),
-('owner@motel.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'owner');
+('priya@elitegrand.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'receptionist'),
+('ashok@elitegrand.com', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'owner');
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

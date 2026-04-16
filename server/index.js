@@ -15,17 +15,17 @@ initializeDatabase();
 
 // Users - hardcoded for simplicity
 const users = {
-  'owner@motel.com': {
+  'ashok@elitegrand.com': {
     id: 1,
-    name: 'Owner User',
-    email: 'owner@motel.com',
+    name: 'Ashok',
+    email: 'ashok@elitegrand.com',
     password: 'password123',
     role: 'owner'
   },
-  'receptionist@motel.com': {
+  'priya@elitegrand.com': {
     id: 2,
-    name: 'Receptionist User',
-    email: 'receptionist@motel.com',
+    name: 'Priya',
+    email: 'priya@elitegrand.com',
     password: 'password123',
     role: 'receptionist'
   }
@@ -659,7 +659,7 @@ app.get('/api/audit', (req, res) => {
 // ========== HEALTH CHECK ==========
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'Motel Management API Running', 
+    message: 'Hotel ELITE GRAND - API Running', 
     status: 'OK',
     database: isConnected() ? 'SQLite ✅' : '❌ Offline'
   });
@@ -675,5 +675,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n✅ Server started on port ${PORT}`);
   console.log(`📦 Database: ${isConnected() ? '✅ SQLite Connected' : '❌ Not Available'}`);
-  console.log(`Test: owner@motel.com / password123\n`);
+  console.log(`Test: ashok@elitegrand.com / password123\n`);
 });

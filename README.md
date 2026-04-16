@@ -27,7 +27,7 @@ npm start
 # Backend: http://localhost:5000
 
 # Test credentials:
-# Email: owner@motel.com
+# Email: ashok@elitegrand.com
 # Password: password123
 ```
 
@@ -134,8 +134,8 @@ For detailed troubleshooting, database setup, and deployment guides, see the com
 
 ### Default Login
 
-- Email: admin@motel.com
-- Password: password
+- Email: ashok@elitegrand.com
+- Password: password123
 
 ## Project Structure
 

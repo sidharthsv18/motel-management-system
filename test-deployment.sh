@@ -26,7 +26,7 @@ echo "[TEST 3] Test login endpoint"
 echo "Sending POST to http://localhost:5000/api/auth/login"
 curl -v -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"owner@motel.com","password":"password123"}' \
+  -d '{"email":"ashok@elitegrand.com","password":"password123"}' \
   2>&1
 
 echo ""

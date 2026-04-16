@@ -39,7 +39,7 @@ function Login() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'}}>
       <div className="card" style={{width: '400px'}}>
-        <h2 style={{textAlign: 'center', marginBottom: '20px'}}>Login to Motel Management</h2>
+        <h2 style={{textAlign: 'center', marginBottom: '20px'}}>Hotel ELITE GRAND</h2>
 
         {error && (
           <div style={{color: 'red', marginBottom: '15px', textAlign: 'center'}}>
