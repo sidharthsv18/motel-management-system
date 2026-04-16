@@ -56,8 +56,8 @@ echo ""
 echo "Website: http://3.110.24.107"
 echo ""
 echo "Credentials:"
-echo "  Owner: ashok@elitegrand.com / password123"
-echo "  Receptionist: priya@elitegrand.com / password123"
+echo "  Owner: owner@elitegrand.com / Elitegrand#1818"
+echo "  Receptionist: reception@elitegrand.com / Frontdesk#5100"
 echo ""
 echo "=========================================="
 
@@ -66,7 +66,7 @@ echo ""
 echo "Testing backend API..."
 RESPONSE=$(curl -s -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"ashok@elitegrand.com","password":"password123"}')
+  -d '{"email":"owner@elitegrand.com","password":"Elitegrand#1818"}')
 
 if echo "$RESPONSE" | grep -q "token"; then
   echo "✅ Backend login endpoint is working!"

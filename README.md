@@ -1,4 +1,4 @@
-# Motel Management System
+# ELITEGRAND HOTEL Management System
 
 A complete full-stack web application for managing motel bookings, rooms, payments, and expenses with role-based access control.
 
@@ -27,8 +27,8 @@ npm start
 # Backend: http://localhost:5000
 
 # Test credentials:
-# Email: ashok@elitegrand.com
-# Password: password123
+# Email: owner@elitegrand.com
+# Password: Elitegrand#1818
 ```
 
 **That's it!** No database setup needed yet - uses mock data by default.
@@ -134,8 +134,8 @@ For detailed troubleshooting, database setup, and deployment guides, see the com
 
 ### Default Login
 
-- Email: ashok@elitegrand.com
-- Password: password123
+- Email: owner@elitegrand.com
+- Password: Elitegrand#1818
 
 ## Project Structure
 

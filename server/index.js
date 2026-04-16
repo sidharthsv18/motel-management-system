@@ -15,18 +15,18 @@ initializeDatabase();
 
 // Users - hardcoded for simplicity
 const users = {
-  'ashok@elitegrand.com': {
+  'owner@elitegrand.com': {
     id: 1,
-    name: 'Ashok',
-    email: 'ashok@elitegrand.com',
-    password: 'password123',
+    name: 'Owner',
+    email: 'owner@elitegrand.com',
+    password: 'Elitegrand#1818',
     role: 'owner'
   },
-  'priya@elitegrand.com': {
+  'reception@elitegrand.com': {
     id: 2,
-    name: 'Priya',
-    email: 'priya@elitegrand.com',
-    password: 'password123',
+    name: 'Reception',
+    email: 'reception@elitegrand.com',
+    password: 'Frontdesk#5100',
     role: 'receptionist'
   }
 };
@@ -675,5 +675,5 @@ app.use((err, req, res, next) => {
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`\n✅ Server started on port ${PORT}`);
   console.log(`📦 Database: ${isConnected() ? '✅ SQLite Connected' : '❌ Not Available'}`);
-  console.log(`Test: ashok@elitegrand.com / password123\n`);
+  console.log(`Test: owner@elitegrand.com / Elitegrand#1818\n`);
 });

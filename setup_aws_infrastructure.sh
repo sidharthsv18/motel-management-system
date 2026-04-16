@@ -419,7 +419,7 @@ NEXT STEPS
 
 14. Verify application:
     - Visit https://yourdomain.com
-    - Login with: ashok@elitegrand.com / password123
+    - Login with: owner@elitegrand.com / Elitegrand#1818
     - Test all pages and features
 
 ============================================================================

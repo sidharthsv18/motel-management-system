@@ -11,8 +11,8 @@ const JWT_SECRET = 'test_secret_key_2026';
 
 // Mock users in memory
 const users = {
-  'ashok@elitegrand.com': { id: 1, name: 'Ashok', role: 'owner', password: 'password123' },
-  'priya@elitegrand.com': { id: 2, name: 'Priya', role: 'receptionist', password: 'password123' }
+  'owner@elitegrand.com': { id: 1, name: 'Owner', role: 'owner', password: 'Elitegrand#1818' },
+  'reception@elitegrand.com': { id: 2, name: 'Reception', role: 'receptionist', password: 'Frontdesk#5100' }
 };
 
 // Login endpoint
@@ -79,6 +79,6 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
   console.log(`\n✅ Backend running on port ${PORT}`);
   console.log(`\nTest credentials:`);
-  console.log(`  ashok@elitegrand.com / password123`);
-  console.log(`  priya@elitegrand.com / password123\n`);
+  console.log(`  owner@elitegrand.com / Elitegrand#1818`);
+  console.log(`  reception@elitegrand.com / Frontdesk#5100\n`);
 });
